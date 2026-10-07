@@ -55,20 +55,11 @@ class SorteadorView {
   renderResults(results) {
     this.resultPlaceholder.classList.add('hidden');
     this.resultDisplay.classList.remove('hidden');
-  
-  // Limpa os resultados anteriores com segurança
-    this.resultDisplay.textContent = ''; 
-
-  // Cria cada elemento de forma segura
-    results.forEach(res => {
-      const div = document.createElement('div');
-      div.className = 'px-4 py-2.5 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-xl md:text-2xl rounded-xl shadow-lg border border-indigo-400/30 transform hover:scale-105 transition';
-    
-    // O textContent garante que o valor inserido seja tratado estritamente como TEXTO
-      div.textContent = res; 
-    
-      this.resultDisplay.appendChild(div);
-    });
+    this.resultDisplay.innerHTML = results.map(res => `
+      <div class="px-4 py-2.5 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-xl md:text-2xl rounded-xl shadow-lg border border-indigo-400/30 transform hover:scale-105 transition">
+        ${res}
+      </div>
+    `).join('');
   }
 
   renderHistory(history) {
@@ -76,37 +67,15 @@ class SorteadorView {
       this.historyList.innerHTML = `<li class="text-slate-600 italic text-xs">Nenhum sorteio realizado nesta sessão.</li>`;
       this.btnClearHistory.classList.add('hidden');
       return;
-   }
+    }
 
     this.btnClearHistory.classList.remove('hidden');
-    this.historyList.textContent = ''; // Limpa a lista com segurança
-
-    history.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'flex justify-between items-center bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-lg';
-
-    // Cria o span com o horário e o rótulo
-      const spanInfo = document.createElement('span');
-      spanInfo.className = 'text-xs text-slate-400 font-mono';
-    
-      const strongLabel = document.createElement('strong');
-      strongLabel.className = 'text-slate-200';
-      strongLabel.textContent = `${item.typeLabel}:`; // Seguro
-
-      spanInfo.appendChild(document.createTextNode(`[${item.time}] `)); // Seguro
-      spanInfo.appendChild(strongLabel);
-
-    // Cria o span com a lista de itens sorteados
-      const spanItems = document.createElement('span');
-      spanItems.className = 'font-bold text-indigo-400 text-sm truncate max-w-[180px]';
-      spanItems.textContent = item.items.join(', '); // Seguro: O textContent não executa HTML
-
-    // Junta as peças
-      li.appendChild(spanInfo);
-      li.appendChild(spanItems);
-
-      this.historyList.appendChild(li);
-    });
+    this.historyList.innerHTML = history.map(item => `
+      <li class="flex justify-between items-center bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-lg">
+        <span class="text-xs text-slate-400 font-mono">[${item.time}] <strong class="text-slate-200">${item.typeLabel}:</strong></span>
+        <span class="font-bold text-indigo-400 text-sm truncate max-w-[180px]">${item.items.join(', ')}</span>
+      </li>
+    `).join('');
   }
 
   playSuspenseAnimation(finalCallback) {
