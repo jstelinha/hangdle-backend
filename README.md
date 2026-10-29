@@ -6,6 +6,58 @@ Gabriel Zafani e Julia Stela.
 Node 24 + TypeScript + Express + MySQL 8.4. O front-end fica em
 [cade-frontend](https://github.com/jstelinha/cade-frontend).
 
+## Onde está cada item da rubrica
+
+Todo trecho que atende um item da rubrica tem um comentário de marcação, sempre
+no mesmo formato:
+
+```text
+// Rubrica de <Disciplina> - <Critério> - <Requisito>
+```
+
+Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
+
+- **no GitHub:** aperte `.` na página do repositório (abre o editor no
+  navegador) e use a busca (`Ctrl+Shift+F`);
+- **no VS Code:** `Ctrl+Shift+F` com a pasta do projeto aberta;
+- **no terminal:** `git grep -n "Rubrica de"`.
+
+### Sprint 1
+
+| Item da rubrica | Onde está | Teste que comprova |
+|---|---|---|
+| **Back-end · Cadastro de Usuário** · campos obrigatórios: nome, email, senha, CPF | `src/servicos/ServicoCadastro.ts`, `src/esquemas/usuario.ts`, `mysql/init.sql` | `testes/unidade/cadastro.test.ts` |
+| **Back-end · Cadastro de Usuário** · validação de CPF | `src/dominio/Cpf.ts`; o banco também recusa, com um gatilho em `mysql/init.sql` | `testes/unidade/cpf.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
+| **Back-end · Cadastro de Usuário** · validação de nível de senha | `src/dominio/Senha.ts` | `testes/unidade/senha.test.ts` |
+| **Back-end · Cadastro de Usuário** · validação de email | `src/dominio/Email.ts`, `mysql/init.sql` | `testes/unidade/email.test.ts` |
+| **Tech Forge · Encapsulamento e Proteção do Estado** | Campos privados `#` em `src/dominio/Cpf.ts`; construtor privado em `src/dominio/Senha.ts` (só nasce por `Senha.criar`, que valida e criptografa) | `testes/unidade/cpf.test.ts`, `testes/unidade/senha.test.ts` |
+| **Tech Forge · Acesso Controlado e Propriedades** | `get` só onde há regra, em `src/dominio/Email.ts`; `src/dominio/Usuario.ts` não expõe CPF nem hash | `testes/unidade/cadastro.test.ts` |
+
+### Adiantado da Sprint 2
+
+| Item da rubrica | Onde está | Teste que comprova |
+|---|---|---|
+| **Back-end · Autenticação** · login, senha criptografada, regex de e-mail, JWT, só usuário existente | `src/servicos/ServicoAutenticacao.ts`, `src/dominio/Senha.ts`, `src/dominio/Email.ts` | `testes/unidade/login.test.ts` |
+
+### Exigências da disciplina
+
+| Exigência | Onde está |
+|---|---|
+| Docker | `Dockerfile`, `docker-compose.yml` |
+| nginx | `nginx.conf` |
+| zod | `src/esquemas/usuario.ts` |
+| Testes automáticos | `testes/` e `.github/workflows/testes.yml` |
+
+## Onde o Node.js é usado
+
+- **A API inteira roda em Node.js 24.** `src/server.ts` liga o servidor Express
+  (`app.listen`) e `src/app.ts` monta as rotas.
+- **Recursos do próprio Node:** `node:crypto` em
+  `src/servicos/ServicoAutenticacao.ts`, `Buffer` em `src/dominio/Senha.ts` e
+  `process.env` em `src/config/ambiente.ts`.
+- **Para rodar:** `npm start` executa `node dist/server.js`. O `Dockerfile` parte
+  da imagem `node:24-alpine`.
+
 ## Rodar tudo com Docker
 
 Os dois repositórios precisam estar lado a lado na mesma pasta:

@@ -43,6 +43,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await conexao.beginTransaction();
+  await conexao.query("DELETE FROM usuarios");
 });
 
 afterEach(async () => {
