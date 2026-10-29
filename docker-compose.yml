@@ -1,4 +1,6 @@
 # Rubrica de Devops - Configuração docker
+name: cade
+
 services:
   db:
     image: mysql:8.4
