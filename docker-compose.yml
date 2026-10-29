@@ -1,0 +1,72 @@
+# Rubrica de Devops - Configuração docker
+services:
+  db:
+    image: mysql:8.4
+    container_name: hangdle_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - rede-interna
+
+  backend:
+    build: .
+    container_name: hangdle_backend
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rede-interna
+      - rede-externa
+
+  frontend:
+    build: ../cade-frontend
+    container_name: hangdle_frontend
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - rede-externa
+
+  nginx:
+    image: nginx:alpine
+    container_name: hangdle_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - rede-externa
+
+networks:
+  rede-externa:
+    driver: bridge
+  rede-interna:
+    driver: bridge
+
+volumes:
+  db_data:

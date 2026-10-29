@@ -1,0 +1,58 @@
+# Rubrica de Exigência - Testes automatizados
+name: Testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: raiz-so-para-o-ci
+          MYSQL_DATABASE: hangdle
+          MYSQL_USER: hangdle
+          MYSQL_PASSWORD: senha-so-para-o-ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -praiz-so-para-o-ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      TESTE_DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: hangdle
+      DB_PASSWORD: senha-so-para-o-ci
+      DB_NAME: hangdle
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Testes de unidade e de invasão
+        run: npm test
+
+      - name: Cria a tabela e as travas do banco
+        run: mysql -h 127.0.0.1 -uroot -praiz-so-para-o-ci hangdle < mysql/init.sql
+
+      - name: Testes de integração com o MySQL
+        run: npm run test:integracao
+
+      - name: Imagem Docker
+        run: docker build -t hangdle-backend .
