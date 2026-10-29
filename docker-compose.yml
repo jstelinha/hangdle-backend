@@ -28,12 +28,19 @@ services:
     build: .
     container_name: hangdle_backend
     restart: always
-    env_file: .env
-    environment:
-      DB_HOST: db
-      DB_PORT: 3306
     ports:
       - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SEGREDO: ${JWT_SEGREDO}
+      JWT_EXPIRACAO_SEGUNDOS: ${JWT_EXPIRACAO_SEGUNDOS:-7200}
+      CORS_ORIGENS: ${CORS_ORIGENS:-http://localhost,http://localhost:5173}
+      TENTATIVAS_POR_JANELA: ${TENTATIVAS_POR_JANELA:-20}
     depends_on:
       db:
         condition: service_healthy
@@ -57,7 +64,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - frontend
       - backend
