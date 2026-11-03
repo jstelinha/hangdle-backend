@@ -49,7 +49,7 @@ services:
       - rede-externa
 
   frontend:
-    build: ../cade-frontend
+    build: ../hangdle-frontend
     container_name: hangdle_frontend
     restart: always
     depends_on:
