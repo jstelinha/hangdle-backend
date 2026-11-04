@@ -40,6 +40,7 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Autenticação** · login, senha criptografada, regex de e-mail, JWT, só usuário existente | `src/servicos/ServicoAutenticacao.ts`, `src/dominio/Senha.ts`, `src/dominio/Email.ts` | `testes/unidade/login.test.ts` |
 | **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
 | **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros | `testes/unidade/partidaDiaria.test.ts` |
+| **Probabilidade e Estatística · Análise Descritiva** · métricas adequadas | `src/dominio/EstatisticasDoDia.ts`: quantos jogaram, quantos não acertaram e a distribuição por número de letras, que vira o histograma do dia no front | `testes/unidade/estatisticas.test.ts` |
 
 ### Exigências da disciplina
 
@@ -122,6 +123,7 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/login` | Login: `email`, `senha`. Devolve `200` com `token` (JWT) e `usuario`. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
 | `GET` | `/palavra-do-dia` | A palavra do dia, igual para todo mundo: `dia`, `palavra` e `categoria`. |
+| `GET` | `/palavra-do-dia/estatisticas` | Como todo mundo foi no dia: quantos jogaram, quantos não acertaram e quantos acertaram com cada número de letras. Aceita `?dia=AAAA-MM-DD`. |
 | `POST` | `/resultados` | Com login. Salva o resultado do dia: `dia` e `letras` (os chutes, na ordem). Devolve `201` com o resultado calculado. |
 | `GET` | `/resultados` | Com login. O histórico de quem está logado, do mais novo para o mais antigo. Aceita `?dia=AAAA-MM-DD`. |
 
