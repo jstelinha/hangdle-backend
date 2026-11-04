@@ -1,6 +1,6 @@
 import type { Connection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { conectarBancoDeTeste } from "../apoio/conexaoTeste.js";
+import { conectarBancoDeTeste, esvaziarTabelasDoJogo } from "../apoio/conexaoTeste.js";
 
 let conexao: Connection;
 let comida: number;
@@ -24,8 +24,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await conexao.beginTransaction();
-  await conexao.query("DELETE FROM palavras");
-  await conexao.query("DELETE FROM categorias");
+  await esvaziarTabelasDoJogo(conexao);
   comida = await inserirCategoria("Comida");
 });
 
