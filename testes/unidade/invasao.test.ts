@@ -97,6 +97,25 @@ describe("ataques contra cadastro e login", () => {
     expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere 15 minutos e tente de novo." });
   });
 
+  it("login certo não gasta tentativa", async () => {
+    const { app } = criarAppTeste(2);
+    await request(app).post("/usuarios").send(LARISSA);
+    const entrar = () => request(app).post("/login").send({ email: LARISSA.email, senha: LARISSA.senha });
+
+    const respostas = [await entrar(), await entrar(), await entrar()];
+
+    expect(respostas.map((resposta) => resposta.status)).toEqual([200, 200, 200]);
+  });
+
+  it("cadastro não gasta as tentativas do login", async () => {
+    const { app } = criarAppTeste(1);
+    await request(app).post("/usuarios").send(LARISSA);
+
+    const login = await request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    expect(login.status).toBe(401);
+  });
+
   it("atrás do nginx, cada pessoa tem o próprio limite de tentativas", async () => {
     const { app } = criarAppTeste(1);
     const tentativaDe = (ip: string) =>

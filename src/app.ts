@@ -19,7 +19,8 @@ export type DependenciasApp = {
 
 export function criarApp(dependencias: DependenciasApp): Express {
   const app = express();
-  const limite = limitarTentativas(dependencias.tentativasPorJanela);
+  const limiteCadastro = limitarTentativas(dependencias.tentativasPorJanela);
+  const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
 
   app.disable("x-powered-by");
   // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
@@ -28,8 +29,8 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(express.json({ limit: "10kb" }));
 
   app.use(rotasSaude(dependencias.verificarBanco));
-  app.use(rotasUsuarios(new ServicoCadastro(dependencias.usuarios), limite));
-  app.use(rotasAutenticacao(new ServicoAutenticacao(dependencias.usuarios, dependencias.token), limite));
+  app.use(rotasUsuarios(new ServicoCadastro(dependencias.usuarios), limiteCadastro));
+  app.use(rotasAutenticacao(new ServicoAutenticacao(dependencias.usuarios, dependencias.token), limiteLogin));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);
