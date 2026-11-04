@@ -85,7 +85,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("bloqueia a quarta tentativa de login seguida quando o limite é 3", async () => {
-    const { app } = criarAppTeste(3);
+    const { app } = criarAppTeste({ tentativasPorJanela: 3 });
     const tentativa = () => request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
 
     await tentativa();
@@ -98,7 +98,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("login certo não gasta tentativa", async () => {
-    const { app } = criarAppTeste(2);
+    const { app } = criarAppTeste({ tentativasPorJanela: 2 });
     await request(app).post("/usuarios").send(LARISSA);
     const entrar = () => request(app).post("/login").send({ email: LARISSA.email, senha: LARISSA.senha });
 
@@ -108,7 +108,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("cadastro não gasta as tentativas do login", async () => {
-    const { app } = criarAppTeste(1);
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
     await request(app).post("/usuarios").send(LARISSA);
 
     const login = await request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
@@ -117,7 +117,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("atrás do nginx, cada pessoa tem o próprio limite de tentativas", async () => {
-    const { app } = criarAppTeste(1);
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
     const tentativaDe = (ip: string) =>
       request(app).post("/login").set("X-Forwarded-For", ip).send({ email: LARISSA.email, senha: "Errada#2026" });
 
@@ -130,7 +130,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("não deixa escapar do limite inventando um IP no X-Forwarded-For", async () => {
-    const { app } = criarAppTeste(1);
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
     const tentativaComIpInventado = (inventado: string) =>
       request(app)
         .post("/login")
