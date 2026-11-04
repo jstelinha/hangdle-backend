@@ -1,4 +1,5 @@
-import type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { ExecutorSql } from "../banco/conexao.js";
 import { Cpf } from "../dominio/Cpf.js";
 import { Email } from "../dominio/Email.js";
 import { Nome } from "../dominio/Nome.js";
@@ -27,8 +28,6 @@ function campoDuplicado(erro: unknown): CampoUnico | null {
   const indice = Object.keys(INDICES_UNICOS).find((nome) => mensagem.includes(nome));
   return indice ? (INDICES_UNICOS[indice] ?? null) : null;
 }
-
-export type ExecutorSql = Pick<Pool, "execute">;
 
 export class RepositorioUsuariosMysql implements RepositorioUsuarios {
   readonly #banco: ExecutorSql;

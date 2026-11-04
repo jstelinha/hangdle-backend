@@ -22,3 +22,7 @@ export class ErroCredenciais extends ErroAplicacao {
 export class ErroConflito extends ErroAplicacao {
   readonly status = 409;
 }
+
+export class ErroIndisponivel extends ErroAplicacao {
+  readonly status = 503;
+}
