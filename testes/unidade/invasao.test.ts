@@ -97,6 +97,33 @@ describe("ataques contra cadastro e login", () => {
     expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere 15 minutos e tente de novo." });
   });
 
+  it("atrás do nginx, cada pessoa tem o próprio limite de tentativas", async () => {
+    const { app } = criarAppTeste(1);
+    const tentativaDe = (ip: string) =>
+      request(app).post("/login").set("X-Forwarded-For", ip).send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaDe("203.0.113.10");
+    const segundaDaMesmaPessoa = await tentativaDe("203.0.113.10");
+    const primeiraDeOutraPessoa = await tentativaDe("203.0.113.20");
+
+    expect(segundaDaMesmaPessoa.status).toBe(429);
+    expect(primeiraDeOutraPessoa.status).toBe(401);
+  });
+
+  it("não deixa escapar do limite inventando um IP no X-Forwarded-For", async () => {
+    const { app } = criarAppTeste(1);
+    const tentativaComIpInventado = (inventado: string) =>
+      request(app)
+        .post("/login")
+        .set("X-Forwarded-For", `${inventado}, 203.0.113.10`)
+        .send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaComIpInventado("198.51.100.1");
+    const segunda = await tentativaComIpInventado("198.51.100.2");
+
+    expect(segunda.status).toBe(429);
+  });
+
   it("só libera CORS para as origens configuradas", async () => {
     const { app } = criarAppTeste();
 

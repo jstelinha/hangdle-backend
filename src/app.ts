@@ -22,6 +22,8 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const limite = limitarTentativas(dependencias.tentativasPorJanela);
 
   app.disable("x-powered-by");
+  // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
+  app.set("trust proxy", 1);
   app.use(cors({ origin: dependencias.corsOrigens }));
   app.use(express.json({ limit: "10kb" }));
 
