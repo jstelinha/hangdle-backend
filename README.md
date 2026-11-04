@@ -26,10 +26,10 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 
 | Item da rubrica | Onde está | Teste que comprova |
 |---|---|---|
-| **Back-end · Cadastro de Usuário** · campos obrigatórios: nome, email, senha, CPF | `src/servicos/ServicoCadastro.ts`, `src/esquemas/usuario.ts`, `mysql/init.sql` | `testes/unidade/cadastro.test.ts` |
-| **Back-end · Cadastro de Usuário** · validação de CPF | `src/dominio/Cpf.ts`; o banco também recusa, com um gatilho em `mysql/init.sql` | `testes/unidade/cpf.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
+| **Back-end · Cadastro de Usuário** · campos obrigatórios: nome, email, senha, CPF | `src/servicos/ServicoCadastro.ts`, `src/esquemas/usuario.ts`, `mysql/01-usuarios.sql` | `testes/unidade/cadastro.test.ts` |
+| **Back-end · Cadastro de Usuário** · validação de CPF | `src/dominio/Cpf.ts`; o banco também recusa, com um gatilho em `mysql/01-usuarios.sql` | `testes/unidade/cpf.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
 | **Back-end · Cadastro de Usuário** · validação de nível de senha | `src/dominio/Senha.ts` | `testes/unidade/senha.test.ts` |
-| **Back-end · Cadastro de Usuário** · validação de email | `src/dominio/Email.ts`, `mysql/init.sql` | `testes/unidade/email.test.ts` |
+| **Back-end · Cadastro de Usuário** · validação de email | `src/dominio/Email.ts`, `mysql/01-usuarios.sql` | `testes/unidade/email.test.ts` |
 | **Tech Forge · Encapsulamento e Proteção do Estado** | Campos privados `#` em `src/dominio/Cpf.ts`; construtor privado em `src/dominio/Senha.ts` (só nasce por `Senha.criar`, que valida e criptografa) | `testes/unidade/cpf.test.ts`, `testes/unidade/senha.test.ts` |
 | **Tech Forge · Acesso Controlado e Propriedades** | `get` só onde há regra, em `src/dominio/Email.ts`; `src/dominio/Usuario.ts` não expõe CPF nem hash | `testes/unidade/cadastro.test.ts` |
 
@@ -78,7 +78,7 @@ O comando sobe um projeto chamado `cade` com quatro containers:
 
 | Container | O que roda |
 |---|---|
-| `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com o `mysql/init.sql`. |
+| `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com os arquivos da pasta `mysql/`. |
 | `hangdle_backend` | Esta API, na porta 3000, aberta só para este computador (`127.0.0.1:3000`). De outra máquina, a API só é acessível pelo nginx. Só liga depois que o MySQL responde. |
 | `hangdle_frontend` | O front (Vite), que vem de `../hangdle-frontend`. |
 | `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. |
@@ -89,8 +89,19 @@ novo.
 O MySQL fica em `127.0.0.1:3306`, aberto só para este computador. No DBeaver, use
 o usuário e a senha do `.env` e ligue `allowPublicKeyRetrieval=true`.
 
-Na primeira subida, o MySQL roda o `mysql/init.sql`. Para recriar o banco do
-zero, rode `docker compose down -v` (apaga todos os dados).
+### Banco de dados
+
+O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto. Na primeira
+subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
+um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
+para o `02-palavras.sql`:
+
+```bash
+docker exec -i hangdle_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < mysql/02-palavras.sql
+```
+
+Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v`
+(apaga todos os dados).
 
 ## Rotas
 
