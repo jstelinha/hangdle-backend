@@ -91,8 +91,15 @@ o usuário e a senha do `.env` e ligue `allowPublicKeyRetrieval=true`.
 
 ### Banco de dados
 
-O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto. Na primeira
-subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
+O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
+
+| Arquivo | O que cria |
+|---|---|
+| `01-usuarios.sql` | Usuários, com as travas de e-mail, CPF e senha |
+| `02-palavras.sql` | Categorias e palavras. Cada palavra pertence a uma categoria, fica em maiúsculas e não se repete, nem trocando só os acentos. |
+| `03-palavras-iniciais.sql` | As 60 primeiras palavras, em 6 categorias |
+
+Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
 para o `02-palavras.sql`:
 
