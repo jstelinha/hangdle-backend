@@ -98,6 +98,7 @@ O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
 | `01-usuarios.sql` | Usuários, com as travas de e-mail, CPF e senha |
 | `02-palavras.sql` | Categorias e palavras. Cada palavra pertence a uma categoria, fica em maiúsculas e não se repete, nem trocando só os acentos. |
 | `03-palavras-iniciais.sql` | As 60 primeiras palavras, em 6 categorias |
+| `04-palavras-do-dia.sql` | Qual palavra saiu em cada dia |
 
 Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
@@ -117,6 +118,14 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/usuarios` | Cadastro: `nome`, `email`, `cpf`, `senha`. Devolve `201` com `id`, `nome` e `email`. |
 | `POST` | `/login` | Login: `email`, `senha`. Devolve `200` com `token` (JWT) e `usuario`. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
+| `GET` | `/palavra-do-dia` | A palavra do dia, igual para todo mundo: `dia`, `palavra` e `categoria`. |
+
+### Palavra do dia
+
+O dia vale pelo horário de Brasília e troca à meia-noite. No primeiro pedido do
+dia, a API sorteia uma palavra que nunca saiu; quando todas já saíram, volta a
+que saiu há mais tempo. O sorteio fica guardado em `palavras_do_dia`, então quem
+abrir o jogo no mesmo dia recebe a mesma palavra.
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
