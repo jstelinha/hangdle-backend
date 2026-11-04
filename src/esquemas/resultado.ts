@@ -11,7 +11,7 @@ export const esquemaResultado = z.object({
     .transform((letras) => letras.map((letra) => letra.toUpperCase())),
 });
 
-export const esquemaFiltroResultados = z.object({
+export const esquemaFiltroDia = z.object({
   dia: dia.optional(),
 });
 

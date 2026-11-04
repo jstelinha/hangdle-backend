@@ -1,9 +1,11 @@
+import type { ContagemDoDia } from "../dominio/EstatisticasDoDia.js";
 import type { ResultadoDiario } from "../dominio/ResultadoDiario.js";
 import { ErroConflito } from "../erros/ErroAplicacao.js";
 
 export interface RepositorioResultados {
   salvar(usuarioId: number, resultado: ResultadoDiario): Promise<void>;
   listar(usuarioId: number, dia?: string): Promise<ResultadoDiario[]>;
+  contarDoDia(dia: string): Promise<ContagemDoDia[]>;
 }
 
 const JA_JOGOU = "Você já jogou a palavra deste dia.";

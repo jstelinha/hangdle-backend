@@ -1,5 +1,5 @@
 import { Router, type RequestHandler } from "express";
-import { esquemaFiltroResultados, esquemaResultado } from "../esquemas/resultado.js";
+import { esquemaFiltroDia, esquemaResultado } from "../esquemas/resultado.js";
 import { usuarioLogado } from "../middlewares/exigirLogin.js";
 import type { ServicoResultados } from "../servicos/ServicoResultados.js";
 
@@ -12,7 +12,7 @@ export function rotasResultados(resultados: ServicoResultados, exigirLogin: Requ
   });
 
   rotas.get("/resultados", exigirLogin, async (requisicao, resposta) => {
-    const { dia } = esquemaFiltroResultados.parse(requisicao.query);
+    const { dia } = esquemaFiltroDia.parse(requisicao.query);
     resposta.json({ resultados: await resultados.historico(usuarioLogado(resposta), dia) });
   });
 
