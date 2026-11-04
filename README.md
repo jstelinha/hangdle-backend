@@ -71,14 +71,15 @@ uma-pasta-qualquer/
 1. Copie `.env.example` para `.env` e troque as senhas e o `JWT_SEGREDO` (pelo
    menos 32 caracteres). O `.env` não vai para o git.
 2. Na pasta `hangdle-backend`, rode `docker compose up -d --build`.
-3. Abra `http://localhost`. A API responde em `http://localhost:3000`.
+3. Abra `http://localhost`. A API responde pelo nginx em `http://localhost/api/`
+   (por exemplo, `http://localhost/api/saude`).
 
 O comando sobe um projeto chamado `cade` com quatro containers:
 
 | Container | O que roda |
 |---|---|
 | `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com o `mysql/init.sql`. |
-| `hangdle_backend` | Esta API, na porta 3000. Só liga depois que o MySQL responde. |
+| `hangdle_backend` | Esta API, na porta 3000, aberta só para este computador (`127.0.0.1:3000`). De outra máquina, a API só é acessível pelo nginx. Só liga depois que o MySQL responde. |
 | `hangdle_frontend` | O front (Vite), que vem de `../hangdle-frontend`. |
 | `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. |
 
@@ -98,6 +99,10 @@ zero, rode `docker compose down -v` (apaga todos os dados).
 | `POST` | `/usuarios` | Cadastro: `nome`, `email`, `cpf`, `senha`. Devolve `201` com `id`, `nome` e `email`. |
 | `POST` | `/login` | Login: `email`, `senha`. Devolve `200` com `token` (JWT) e `usuario`. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
+
+Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
+`/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
+IP que ela conta as tentativas de cadastro e login.
 
 Os erros voltam como `{ "mensagem": "...", "campos": { "campo": "..." } }`, em
 português.
