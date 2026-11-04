@@ -9,12 +9,14 @@ import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js"
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasEstatisticas } from "./rotas/estatisticas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
+import { rotasPerfil } from "./rotas/perfil.js";
 import { rotasResultados } from "./rotas/resultados.js";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasUsuarios } from "./rotas/usuarios.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
 import { ServicoCadastro } from "./servicos/ServicoCadastro.js";
 import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
+import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
 
 export type DependenciasApp = {
@@ -44,6 +46,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
 
   app.use(rotasSaude(dependencias.verificarBanco));
   app.use(rotasUsuarios(new ServicoCadastro(usuarios), limiteCadastro));
+  app.use(rotasPerfil(new ServicoPerfil(usuarios), login));
   app.use(rotasAutenticacao(new ServicoAutenticacao(usuarios, dependencias.token), limiteLogin));
   app.use(rotasEstatisticas(servicoResultados));
   app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora)));

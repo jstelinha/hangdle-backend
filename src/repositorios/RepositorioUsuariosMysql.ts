@@ -50,10 +50,33 @@ export class RepositorioUsuariosMysql implements RepositorioUsuarios {
     }
   }
 
-  async buscarPorEmail(email: Email): Promise<Usuario | null> {
+  buscarPorEmail(email: Email): Promise<Usuario | null> {
+    return this.#buscarUm("email = ?", email.endereco);
+  }
+
+  buscarPorId(id: number): Promise<Usuario | null> {
+    return this.#buscarUm("id = ?", id);
+  }
+
+  async atualizar(id: number, usuario: Usuario): Promise<void> {
+    const registro = usuario.paraPersistencia();
+    try {
+      await this.#banco.execute("UPDATE usuarios SET nome = ?, cpf = ?, senha_hash = ? WHERE id = ?", [
+        registro.nome,
+        registro.cpf,
+        registro.senhaHash,
+        id,
+      ]);
+    } catch (erro) {
+      const campo = campoDuplicado(erro);
+      throw campo ? erroDuplicidade(campo) : erro;
+    }
+  }
+
+  async #buscarUm(condicao: "email = ?" | "id = ?", valor: string | number): Promise<Usuario | null> {
     const [linhas] = await this.#banco.execute<LinhaUsuario[]>(
-      "SELECT id, nome, email, cpf, senha_hash FROM usuarios WHERE email = ? LIMIT 1",
-      [email.endereco],
+      `SELECT id, nome, email, cpf, senha_hash FROM usuarios WHERE ${condicao} LIMIT 1`,
+      [valor],
     );
     const linha = linhas[0];
     if (!linha) {

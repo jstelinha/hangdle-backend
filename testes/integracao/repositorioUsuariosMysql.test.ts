@@ -75,6 +75,31 @@ describe("repositório de usuários no MySQL", () => {
 
     await expect(repetido).rejects.toMatchObject({ campos: { cpf: "Este CPF já está cadastrado." } });
   });
+
+  it("busca pelo id e atualiza nome, CPF e senha sem mexer no e-mail", async () => {
+    const repositorio = new RepositorioUsuariosMysql(conexao);
+    const salvo = await repositorio.inserir(await usuario("larissa.teste@exemplo.com", "529.982.247-25"));
+    const { id } = salvo.paraResposta();
+    const editado = salvo.editado({ nome: new Nome("Larissa Andrade"), cpf: new Cpf("111.444.777-35"), senha: await Senha.criar("Forca#2027") });
+
+    await repositorio.atualizar(id, editado);
+    const encontrado = await repositorio.buscarPorId(id);
+
+    expect(encontrado?.paraPerfil()).toEqual({ id, nome: "Larissa Andrade", email: "larissa.teste@exemplo.com", cpf: "11144477735" });
+    expect(await encontrado?.conferirSenha("Forca#2027")).toBe(true);
+    expect(await repositorio.buscarPorId(id + 1000)).toBeNull();
+  });
+
+  it("traduz o CPF repetido na edição", async () => {
+    const repositorio = new RepositorioUsuariosMysql(conexao);
+    const larissa = await repositorio.inserir(await usuario("larissa.teste@exemplo.com", "529.982.247-25"));
+    await repositorio.inserir(await usuario("outra.teste@exemplo.com", "111.444.777-35"));
+    const comCpfDaOutra = larissa.editado({ nome: new Nome("Larissa Souza"), cpf: new Cpf("111.444.777-35"), senha });
+
+    await expect(repositorio.atualizar(larissa.paraResposta().id, comCpfDaOutra)).rejects.toMatchObject({
+      campos: { cpf: "Este CPF já está cadastrado." },
+    });
+  });
 });
 
 describe("travas do próprio banco", () => {
