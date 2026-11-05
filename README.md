@@ -106,6 +106,7 @@ O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
 | `03-palavras-iniciais.sql` | As 60 primeiras palavras, em 6 categorias |
 | `04-palavras-do-dia.sql` | Qual palavra saiu em cada dia |
 | `05-resultados.sql` | O resultado de cada pessoa em cada dia: as letras chutadas, os erros e se acertou. Um por pessoa por dia. |
+| `06-listas.sql` | As listas de palavras de cada pessoa, usadas nas salas. O nome não se repete para a mesma pessoa, e cada palavra (com uma dica opcional) não se repete na mesma lista. Apagar a lista apaga as palavras dela. |
 
 Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
