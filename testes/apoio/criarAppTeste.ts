@@ -1,5 +1,6 @@
 import { criarApp } from "../../src/app.js";
 import { RepositorioListasMemoria } from "./RepositorioListasMemoria.js";
+import { RepositorioPalavrasDasListasMemoria } from "./RepositorioPalavrasDasListasMemoria.js";
 import { RepositorioPalavrasDoDiaMemoria, type PalavraCadastrada } from "./RepositorioPalavrasDoDiaMemoria.js";
 import { RepositorioResultadosMemoria } from "./RepositorioResultadosMemoria.js";
 import { RepositorioUsuariosMemoria } from "./RepositorioUsuariosMemoria.js";
@@ -37,11 +38,13 @@ export function criarAppTeste({
   palavras = PALAVRAS_TESTE,
 }: OpcoesAppTeste = {}) {
   const usuarios = new RepositorioUsuariosMemoria();
+  const palavrasDasListas = new RepositorioPalavrasDasListasMemoria();
   const app = criarApp({
     usuarios,
     palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
     resultados: new RepositorioResultadosMemoria(),
-    listas: new RepositorioListasMemoria(),
+    listas: new RepositorioListasMemoria((listaId) => palavrasDasListas.contar(listaId)),
+    palavrasDasListas,
     agora,
     verificarBanco: async () => {},
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },

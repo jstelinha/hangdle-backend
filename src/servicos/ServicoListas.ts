@@ -1,12 +1,12 @@
 import type { Lista } from "../dominio/Lista.js";
 import type { Pagina, PedidoDePagina } from "../dominio/Pagina.js";
+import { ErroProibido, type ErroAplicacao } from "../erros/ErroAplicacao.js";
 import type { DadosLista } from "../esquemas/lista.js";
 import type { RepositorioListas } from "../repositorios/RepositorioListas.js";
 import { ServicoComDono } from "./ServicoComDono.js";
 
 export class ServicoListas extends ServicoComDono<Lista> {
   protected override readonly naoEncontrado = "Lista não encontrada.";
-  protected override readonly deOutraPessoa = "Essa lista é de outra pessoa.";
   readonly #listas: RepositorioListas;
 
   constructor(listas: RepositorioListas) {
@@ -19,7 +19,7 @@ export class ServicoListas extends ServicoComDono<Lista> {
   }
 
   buscar(usuarioId: number, id: number): Promise<Lista> {
-    return this.encontrarDoUsuario(usuarioId, id);
+    return this.encontrarDoDono(usuarioId, id);
   }
 
   criar(usuarioId: number, dados: DadosLista): Promise<Lista> {
@@ -27,13 +27,13 @@ export class ServicoListas extends ServicoComDono<Lista> {
   }
 
   async editar(usuarioId: number, id: number, dados: DadosLista): Promise<Lista> {
-    const lista = await this.encontrarDoUsuario(usuarioId, id);
+    const lista = await this.encontrarDoDono(usuarioId, id);
     await this.#listas.atualizar(id, dados);
     return { ...lista, ...dados };
   }
 
   async apagar(usuarioId: number, id: number): Promise<void> {
-    await this.encontrarDoUsuario(usuarioId, id);
+    await this.encontrarDoDono(usuarioId, id);
     await this.#listas.apagar(id);
   }
 
@@ -41,7 +41,11 @@ export class ServicoListas extends ServicoComDono<Lista> {
     return this.#listas.buscar(id);
   }
 
-  protected override pertenceA(lista: Lista, usuarioId: number): boolean {
-    return lista.usuarioId === usuarioId;
+  protected override donoDe(lista: Lista): number {
+    return lista.usuarioId;
+  }
+
+  protected override erroDeOutroDono(): ErroAplicacao {
+    return new ErroProibido("Essa lista é de outra pessoa.");
   }
 }

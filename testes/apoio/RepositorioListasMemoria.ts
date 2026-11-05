@@ -6,17 +6,24 @@ import { mesmoTexto, paginarEmMemoria } from "./paginarEmMemoria.js";
 
 export class RepositorioListasMemoria implements RepositorioListas {
   readonly #listas = new Map<number, Lista>();
+  readonly #contarPalavras: (listaId: number) => number;
   #proximoId = 1;
+
+  constructor(contarPalavras: (listaId: number) => number = () => 0) {
+    this.#contarPalavras = contarPalavras;
+  }
 
   async listar(usuarioId: number, pedido: PedidoDePagina): Promise<Pagina<Lista>> {
     const daPessoa = [...this.#listas.values()]
       .filter((lista) => lista.usuarioId === usuarioId)
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR") || a.id - b.id);
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR") || a.id - b.id)
+      .map((lista) => this.#comContagem(lista));
     return paginarEmMemoria(daPessoa, pedido);
   }
 
   async buscar(id: number): Promise<Lista | null> {
-    return this.#listas.get(id) ?? null;
+    const lista = this.#listas.get(id);
+    return lista ? this.#comContagem(lista) : null;
   }
 
   async criar(usuarioId: number, { nome }: DadosLista): Promise<Lista> {
@@ -36,6 +43,10 @@ export class RepositorioListasMemoria implements RepositorioListas {
 
   async apagar(id: number): Promise<void> {
     this.#listas.delete(id);
+  }
+
+  #comContagem(lista: Lista): Lista {
+    return { ...lista, totalDePalavras: this.#contarPalavras(lista.id) };
   }
 
   #recusarRepetida(usuarioId: number, nome: string, ignorarId?: number): void {
