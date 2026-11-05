@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Edit(./.env)",
+      "Edit(./**/.env)",
+      "Bash(cat .env:*)",
+      "Bash(type .env:*)",
+      "Bash(more .env:*)",
+      "Bash(less .env:*)",
+      "Bash(head .env:*)",
+      "Bash(tail .env:*)",
+      "Bash(grep * .env:*)",
+      "Bash(printenv:*)",
+      "Bash(docker compose down -v:*)",
+      "Bash(docker compose down --volumes:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)"
+    ]
+  }
+}
