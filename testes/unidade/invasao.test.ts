@@ -97,6 +97,52 @@ describe("ataques contra cadastro e login", () => {
     expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere 15 minutos e tente de novo." });
   });
 
+  it("login certo não gasta tentativa", async () => {
+    const { app } = criarAppTeste(2);
+    await request(app).post("/usuarios").send(LARISSA);
+    const entrar = () => request(app).post("/login").send({ email: LARISSA.email, senha: LARISSA.senha });
+
+    const respostas = [await entrar(), await entrar(), await entrar()];
+
+    expect(respostas.map((resposta) => resposta.status)).toEqual([200, 200, 200]);
+  });
+
+  it("cadastro não gasta as tentativas do login", async () => {
+    const { app } = criarAppTeste(1);
+    await request(app).post("/usuarios").send(LARISSA);
+
+    const login = await request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    expect(login.status).toBe(401);
+  });
+
+  it("atrás do nginx, cada pessoa tem o próprio limite de tentativas", async () => {
+    const { app } = criarAppTeste(1);
+    const tentativaDe = (ip: string) =>
+      request(app).post("/login").set("X-Forwarded-For", ip).send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaDe("203.0.113.10");
+    const segundaDaMesmaPessoa = await tentativaDe("203.0.113.10");
+    const primeiraDeOutraPessoa = await tentativaDe("203.0.113.20");
+
+    expect(segundaDaMesmaPessoa.status).toBe(429);
+    expect(primeiraDeOutraPessoa.status).toBe(401);
+  });
+
+  it("não deixa escapar do limite inventando um IP no X-Forwarded-For", async () => {
+    const { app } = criarAppTeste(1);
+    const tentativaComIpInventado = (inventado: string) =>
+      request(app)
+        .post("/login")
+        .set("X-Forwarded-For", `${inventado}, 203.0.113.10`)
+        .send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaComIpInventado("198.51.100.1");
+    const segunda = await tentativaComIpInventado("198.51.100.2");
+
+    expect(segunda.status).toBe(429);
+  });
+
   it("só libera CORS para as origens configuradas", async () => {
     const { app } = criarAppTeste();
 
