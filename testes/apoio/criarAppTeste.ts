@@ -1,4 +1,5 @@
 import { criarApp } from "../../src/app.js";
+import { RepositorioListasMemoria } from "./RepositorioListasMemoria.js";
 import { RepositorioPalavrasDoDiaMemoria, type PalavraCadastrada } from "./RepositorioPalavrasDoDiaMemoria.js";
 import { RepositorioResultadosMemoria } from "./RepositorioResultadosMemoria.js";
 import { RepositorioUsuariosMemoria } from "./RepositorioUsuariosMemoria.js";
@@ -40,6 +41,7 @@ export function criarAppTeste({
     usuarios,
     palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
     resultados: new RepositorioResultadosMemoria(),
+    listas: new RepositorioListasMemoria(),
     agora,
     verificarBanco: async () => {},
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },

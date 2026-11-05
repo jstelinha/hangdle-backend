@@ -3,12 +3,7 @@ import { cpfValido } from "../dominio/Cpf.js";
 import { emailValido, normalizarEmail } from "../dominio/Email.js";
 import { nomeValido, normalizarNome, TAMANHO_MAXIMO_NOME, TAMANHO_MINIMO_NOME } from "../dominio/Nome.js";
 import { mensagemSenhaFraca, senhaForte } from "../dominio/Senha.js";
-
-function texto(obrigatorio: string) {
-  return z.string({
-    error: (problema) => (problema.input === undefined || problema.input === null ? obrigatorio : "Envie este campo como texto."),
-  });
-}
+import { identificador, texto } from "./comuns.js";
 
 // Rubrica de Exigência - zod
 export const esquemaCadastro = z.object({
@@ -39,7 +34,7 @@ export const esquemaEdicao = esquemaCadastro.pick({ nome: true, cpf: true, senha
 });
 
 export const esquemaIdUsuario = z.object({
-  id: z.coerce.number({ error: "Usuário inválido." }).int("Usuário inválido.").positive("Usuário inválido."),
+  id: identificador("Usuário inválido."),
 });
 
 export type DadosCadastro = z.infer<typeof esquemaCadastro>;
