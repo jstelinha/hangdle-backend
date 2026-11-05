@@ -7,6 +7,7 @@ import type { RepositorioPalavrasDoDia } from "./repositorios/RepositorioPalavra
 import type { RepositorioResultados } from "./repositorios/RepositorioResultados.js";
 import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
+import { rotasEstatisticas } from "./rotas/estatisticas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
 import { rotasResultados } from "./rotas/resultados.js";
 import { rotasSaude } from "./rotas/saude.js";
@@ -33,6 +34,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const login = exigirLogin(dependencias.token.segredo);
   const { usuarios, palavrasDoDia, resultados, agora } = dependencias;
+  const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
 
   app.disable("x-powered-by");
   // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
@@ -43,8 +45,9 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasSaude(dependencias.verificarBanco));
   app.use(rotasUsuarios(new ServicoCadastro(usuarios), limiteCadastro));
   app.use(rotasAutenticacao(new ServicoAutenticacao(usuarios, dependencias.token), limiteLogin));
+  app.use(rotasEstatisticas(servicoResultados));
   app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora)));
-  app.use(rotasResultados(new ServicoResultados(resultados, palavrasDoDia, agora), login));
+  app.use(rotasResultados(servicoResultados, login));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);

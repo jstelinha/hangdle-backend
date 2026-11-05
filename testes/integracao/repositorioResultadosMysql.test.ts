@@ -70,6 +70,22 @@ describe("resultados no MySQL", () => {
     expect(await repositorio.listar(bruna)).toEqual([]);
   });
 
+  it("conta quantas pessoas acertaram com cada número de letras", async () => {
+    await repositorio.salvar(larissa, MACA);
+    await repositorio.salvar(bruna, { ...MACA, letras: [..."ZWYKLB"], chutes: 6, erros: 6, acertou: false });
+
+    const contagens = await repositorio.contarDoDia("2026-11-03");
+
+    expect(contagens).toHaveLength(2);
+    expect(contagens).toEqual(
+      expect.arrayContaining([
+        { acertou: true, chutes: 4, jogadores: 1 },
+        { acertou: false, chutes: 6, jogadores: 1 },
+      ]),
+    );
+    expect(await repositorio.contarDoDia("2026-11-04")).toEqual([]);
+  });
+
   it("traduz o resultado repetido recusado pelo banco", async () => {
     await repositorio.salvar(larissa, MACA);
 
