@@ -1,6 +1,8 @@
 import mysql, { type Pool } from "mysql2/promise";
 import type { Ambiente } from "../config/ambiente.js";
 
+export type ExecutorSql = Pick<Pool, "execute">;
+
 export function criarConexao(ambiente: Ambiente): Pool {
   return mysql.createPool({
     host: ambiente.DB_HOST,

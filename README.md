@@ -38,6 +38,8 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | Item da rubrica | Onde está | Teste que comprova |
 |---|---|---|
 | **Back-end · Autenticação** · login, senha criptografada, regex de e-mail, JWT, só usuário existente | `src/servicos/ServicoAutenticacao.ts`, `src/dominio/Senha.ts`, `src/dominio/Email.ts` | `testes/unidade/login.test.ts` |
+| **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
+| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros | `testes/unidade/partidaDiaria.test.ts` |
 
 ### Exigências da disciplina
 
@@ -91,8 +93,17 @@ o usuário e a senha do `.env` e ligue `allowPublicKeyRetrieval=true`.
 
 ### Banco de dados
 
-O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto. Na primeira
-subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
+O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
+
+| Arquivo | O que cria |
+|---|---|
+| `01-usuarios.sql` | Usuários, com as travas de e-mail, CPF e senha |
+| `02-palavras.sql` | Categorias e palavras. Cada palavra pertence a uma categoria, fica em maiúsculas e não se repete, nem trocando só os acentos. |
+| `03-palavras-iniciais.sql` | As 60 primeiras palavras, em 6 categorias |
+| `04-palavras-do-dia.sql` | Qual palavra saiu em cada dia |
+| `05-resultados.sql` | O resultado de cada pessoa em cada dia: as letras chutadas, os erros e se acertou. Um por pessoa por dia. |
+
+Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
 para o `02-palavras.sql`:
 
@@ -110,13 +121,35 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/usuarios` | Cadastro: `nome`, `email`, `cpf`, `senha`. Devolve `201` com `id`, `nome` e `email`. |
 | `POST` | `/login` | Login: `email`, `senha`. Devolve `200` com `token` (JWT) e `usuario`. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
+| `GET` | `/palavra-do-dia` | A palavra do dia, igual para todo mundo: `dia`, `palavra` e `categoria`. |
+| `POST` | `/resultados` | Com login. Salva o resultado do dia: `dia` e `letras` (os chutes, na ordem). Devolve `201` com o resultado calculado. |
+| `GET` | `/resultados` | Com login. O histórico de quem está logado, do mais novo para o mais antigo. Aceita `?dia=AAAA-MM-DD`. |
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
 IP que ela conta as tentativas de cadastro e login.
 
+As rotas com login pedem o token do `/login` no cabeçalho
+`Authorization: Bearer <token>`. Sem token, com token inválido ou vencido, a
+resposta é `401`.
+
 Os erros voltam como `{ "mensagem": "...", "campos": { "campo": "..." } }`, em
 português.
+
+### Palavra do dia
+
+O dia vale pelo horário de Brasília e troca à meia-noite. No primeiro pedido do
+dia, a API sorteia uma palavra que nunca saiu; quando todas já saíram, volta a
+que saiu há mais tempo. O sorteio fica guardado em `palavras_do_dia`, então quem
+abrir o jogo no mesmo dia recebe a mesma palavra.
+
+### Resultados do dia
+
+O front manda só as letras chutadas. A API refaz a partida com a palavra daquele
+dia (`src/dominio/PartidaDiaria.ts`) e calcula os erros, em quantas letras a
+pessoa jogou e se acertou, então ninguém consegue inventar o resultado. Ela
+recusa partida que não terminou, letra repetida e letra depois do fim. Dá para
+salvar o resultado de hoje ou de ontem, para quem joga perto da meia-noite.
 
 ## Testes
 

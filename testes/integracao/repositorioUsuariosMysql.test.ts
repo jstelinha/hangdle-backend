@@ -1,4 +1,4 @@
-import mysql, { type Connection } from "mysql2/promise";
+import type { Connection } from "mysql2/promise";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Cpf } from "../../src/dominio/Cpf.js";
 import { Email } from "../../src/dominio/Email.js";
@@ -7,6 +7,7 @@ import { Senha } from "../../src/dominio/Senha.js";
 import { Usuario } from "../../src/dominio/Usuario.js";
 import { ErroConflito } from "../../src/erros/ErroAplicacao.js";
 import { RepositorioUsuariosMysql } from "../../src/repositorios/RepositorioUsuariosMysql.js";
+import { conectarBancoDeTeste } from "../apoio/conexaoTeste.js";
 
 const HASH_VALIDO = "$2b$12$abcdefghijklmnopqrstuuMRjZ7c0Y3x5r4H9Fh7wJxX2nXxXxXxX";
 
@@ -27,13 +28,7 @@ async function inserirDireto(valores: { nome?: string; email?: string; cpf?: str
 }
 
 beforeAll(async () => {
-  conexao = await mysql.createConnection({
-    host: process.env.TESTE_DB_HOST ?? "127.0.0.1",
-    port: Number(process.env.DB_PORT ?? 3306),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-  });
+  conexao = await conectarBancoDeTeste();
   senha = await Senha.criar("Hangdle#2026");
 });
 
