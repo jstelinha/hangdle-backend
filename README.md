@@ -41,8 +41,12 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Edição de Usuário** · rota autenticada, só o próprio usuário, todos os campos obrigatórios, validação de CPF e de nível de senha, e-mail sem alteração | `src/rotas/perfil.ts`, `src/servicos/ServicoPerfil.ts`, `src/esquemas/usuario.ts` (`esquemaEdicao`), `src/dominio/Usuario.ts` (`editado` mantém o e-mail) | `testes/unidade/perfil.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
 | **Back-end · Configuração de Agentes** · `AGENTS.md`, 3 skills, guardrails e proteção do `.env` | `AGENTS.md` (regras e limites do agente); skills em `.claude/skills/` (`nova-tabela-sql`, `nova-rota-da-api`, `conferir-rubrica`); `.claude/settings.json` bloqueia ler ou editar o `.env`, apagar o banco, `push --force` e `reset --hard`, e pede confirmação para `git push` | — |
 | **Tech Forge · Tratamento de Exceções** | Erros próprios em `src/erros/ErroAplicacao.ts` (validação, credenciais, proibido, não encontrado, conflito, indisponível), traduzidos em `src/middlewares/tratarErros.ts` | `testes/unidade/perfil.test.ts`, `testes/unidade/invasao.test.ts` |
-| **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
-| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros | `testes/unidade/partidaDiaria.test.ts` |
+| **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/06-listas.sql` (palavra → lista → usuário); também `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/listas.test.ts`, `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
+| **Back-end · Cruds Completos** · CRUDs com todas as rotas autenticadas (2 de 4: listas e palavras das listas) | `src/rotas/listas.ts`, `src/rotas/palavrasDasListas.ts` | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
+| **Back-end · Cruds Completos** · paginação das listagens | `src/esquemas/paginacao.ts` (`?pagina=` e `?porPagina=`), `src/repositorios/RepositorioMysql.ts` (`listarPagina`) | `testes/unidade/paginacao.test.ts`, `testes/integracao/repositorioListasMysql.test.ts` |
+| **Back-end · Cruds Completos** · não editar/deletar recursos que não existem | `src/servicos/ServicoComDono.ts` (`encontrarDoDono` dá `404` antes de editar ou apagar) | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
+| **Tech Forge · Tipagem Avançada e Recursos do TypeScript** | Generics em `src/dominio/Pagina.ts` (`Pagina<T>`) e `src/repositorios/RepositorioDeRecursos.ts` (interface usada pelos repositórios dos CRUDs); nenhum `any` no projeto | `testes/unidade/paginacao.test.ts` |
+| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros. Classes abstratas com reuso de verdade: `src/repositorios/RepositorioMysql.ts` (busca, paginação e conflito, para os repositórios dos CRUDs) e `src/servicos/ServicoComDono.ts`, em que cada CRUD sobrescreve como achar o recurso, quem é o dono e que erro dar (polimorfismo: `403` nas listas, `404` nas palavras) | `testes/unidade/partidaDiaria.test.ts`, `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
 | **Probabilidade e Estatística · Análise Descritiva** · métricas adequadas | `src/dominio/EstatisticasDoDia.ts`: quantos jogaram, quantos não acertaram e a distribuição por número de letras, que vira o histograma do dia no front | `testes/unidade/estatisticas.test.ts` |
 
 ### Exigências da disciplina
@@ -132,6 +136,16 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `GET` | `/palavra-do-dia/estatisticas` | Como todo mundo foi no dia: quantos jogaram, quantos não acertaram e quantos acertaram com cada número de letras. Aceita `?dia=AAAA-MM-DD`. |
 | `POST` | `/resultados` | Com login. Salva o resultado do dia: `dia` e `letras` (os chutes, na ordem). Devolve `201` com o resultado calculado. |
 | `GET` | `/resultados` | Com login. O histórico de quem está logado, do mais novo para o mais antigo. Aceita `?dia=AAAA-MM-DD`. |
+| `GET` | `/listas` | Com login. As listas de quem está logado, em ordem alfabética e em páginas, com quantas palavras cada uma tem. |
+| `GET` | `/listas/:id` | Com login, só o dono. Uma lista. |
+| `POST` | `/listas` | Com login. Cria uma lista: `nome`, de 2 a 40 caracteres, sem repetir entre as listas da pessoa. Devolve `201`. |
+| `PUT` | `/listas/:id` | Com login, só o dono. Troca o `nome`. |
+| `DELETE` | `/listas/:id` | Com login, só o dono. Apaga a lista e as palavras dela. Devolve `204`. |
+| `GET` | `/listas/:listaId/palavras` | Com login, só o dono da lista. As palavras da lista, em ordem alfabética e em páginas. |
+| `GET` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Uma palavra. |
+| `POST` | `/listas/:listaId/palavras` | Com login, só o dono da lista. `palavra` (de 3 a 30 letras, com espaço ou hífen só entre as partes) e `dica` (opcional, de 2 a 80 caracteres). A palavra é guardada em maiúsculas e não se repete na lista. Devolve `201`. |
+| `PUT` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Edita `palavra` e `dica`. Mandar a `dica` vazia ou `null` tira a dica. |
+| `DELETE` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Devolve `204`. |
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
@@ -143,6 +157,22 @@ resposta é `401`.
 
 Os erros voltam como `{ "mensagem": "...", "campos": { "campo": "..." } }`, em
 português.
+
+### Listas de palavras
+
+Cada pessoa monta as próprias listas de palavras, que depois servem para as
+salas. A palavra do dia continua vindo só das palavras oficiais.
+
+As listagens aceitam `?pagina=` (a partir de 1) e `?porPagina=` (de 1 a 50). Sem
+eles, a API devolve a primeira página com 10 itens. A resposta é sempre igual:
+
+```json
+{ "itens": [], "pagina": 1, "porPagina": 10, "total": 0, "totalDePaginas": 0 }
+```
+
+Mexer numa lista de outra pessoa dá `403`, e numa lista ou palavra que não existe
+dá `404`. Uma palavra pedida pela lista errada também dá `404`: para aquela
+lista, ela não existe.
 
 ### Palavra do dia
 
