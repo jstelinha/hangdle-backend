@@ -21,18 +21,29 @@ export class RepositorioUsuariosMemoria implements RepositorioUsuarios {
   }
 
   async buscarPorEmail(email: Email): Promise<Usuario | null> {
-    const indice = this.#registros.findIndex((registro) => registro.email === email.endereco);
-    const registro = this.#registros[indice];
+    return this.buscarPorId(this.#registros.findIndex((registro) => registro.email === email.endereco) + 1);
+  }
+
+  async buscarPorId(id: number): Promise<Usuario | null> {
+    const registro = this.#registros[id - 1];
     if (!registro) {
       return null;
     }
     return new Usuario({
-      id: indice + 1,
+      id,
       nome: new Nome(registro.nome),
       email: new Email(registro.email),
       cpf: new Cpf(registro.cpf),
       senha: Senha.aPartirDoHash(registro.senhaHash),
     });
+  }
+
+  async atualizar(id: number, usuario: Usuario): Promise<void> {
+    const registro = usuario.paraPersistencia();
+    if (this.#registros.some((existente, indice) => indice !== id - 1 && existente.cpf === registro.cpf)) {
+      throw erroDuplicidade("cpf");
+    }
+    this.#registros[id - 1] = registro;
   }
 
   get registros(): readonly RegistroUsuario[] {

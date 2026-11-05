@@ -38,6 +38,8 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | Item da rubrica | Onde está | Teste que comprova |
 |---|---|---|
 | **Back-end · Autenticação** · login, senha criptografada, regex de e-mail, JWT, só usuário existente | `src/servicos/ServicoAutenticacao.ts`, `src/dominio/Senha.ts`, `src/dominio/Email.ts` | `testes/unidade/login.test.ts` |
+| **Back-end · Edição de Usuário** · rota autenticada, só o próprio usuário, todos os campos obrigatórios, validação de CPF e de nível de senha, e-mail sem alteração | `src/rotas/perfil.ts`, `src/servicos/ServicoPerfil.ts`, `src/esquemas/usuario.ts` (`esquemaEdicao`), `src/dominio/Usuario.ts` (`editado` mantém o e-mail) | `testes/unidade/perfil.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
+| **Tech Forge · Tratamento de Exceções** | Erros próprios em `src/erros/ErroAplicacao.ts` (validação, credenciais, proibido, não encontrado, conflito, indisponível), traduzidos em `src/middlewares/tratarErros.ts` | `testes/unidade/perfil.test.ts`, `testes/unidade/invasao.test.ts` |
 | **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
 | **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros | `testes/unidade/partidaDiaria.test.ts` |
 | **Probabilidade e Estatística · Análise Descritiva** · métricas adequadas | `src/dominio/EstatisticasDoDia.ts`: quantos jogaram, quantos não acertaram e a distribuição por número de letras, que vira o histograma do dia no front | `testes/unidade/estatisticas.test.ts` |
@@ -121,6 +123,8 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 |---|---|---|
 | `POST` | `/usuarios` | Cadastro: `nome`, `email`, `cpf`, `senha`. Devolve `201` com `id`, `nome` e `email`. |
 | `POST` | `/login` | Login: `email`, `senha`. Devolve `200` com `token` (JWT) e `usuario`. |
+| `GET` | `/usuarios/:id` | Com login, só a própria conta. Devolve `id`, `nome`, `email` e `cpf`, para o formulário de edição. |
+| `PUT` | `/usuarios/:id` | Com login, só a própria conta. Edita `nome`, `cpf` e `senha`, todos obrigatórios. Mandar `email` dá `400`, porque o e-mail não pode ser trocado. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
 | `GET` | `/palavra-do-dia` | A palavra do dia, igual para todo mundo: `dia`, `palavra` e `categoria`. |
 | `GET` | `/palavra-do-dia/estatisticas` | Como todo mundo foi no dia: quantos jogaram, quantos não acertaram e quantos acertaram com cada número de letras. Aceita `?dia=AAAA-MM-DD`. |

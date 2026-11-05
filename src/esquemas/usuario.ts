@@ -33,5 +33,15 @@ export const esquemaLogin = z.object({
   senha: texto("Informe a senha.").min(1, "Informe a senha.").max(200, "E-mail ou senha incorretos."),
 });
 
+// Rubrica de Back-end - Edição de Usuário - Garantir que todos os campos são obrigatórios
+export const esquemaEdicao = esquemaCadastro.pick({ nome: true, cpf: true, senha: true }).extend({
+  email: z.undefined({ error: "O e-mail não pode ser alterado." }).optional(),
+});
+
+export const esquemaIdUsuario = z.object({
+  id: z.coerce.number({ error: "Usuário inválido." }).int("Usuário inválido.").positive("Usuário inválido."),
+});
+
 export type DadosCadastro = z.infer<typeof esquemaCadastro>;
 export type DadosLogin = z.infer<typeof esquemaLogin>;
+export type DadosEdicao = z.infer<typeof esquemaEdicao>;

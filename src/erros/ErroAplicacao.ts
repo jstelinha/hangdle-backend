@@ -19,6 +19,14 @@ export class ErroCredenciais extends ErroAplicacao {
   readonly status = 401;
 }
 
+export class ErroProibido extends ErroAplicacao {
+  readonly status = 403;
+}
+
+export class ErroNaoEncontrado extends ErroAplicacao {
+  readonly status = 404;
+}
+
 export class ErroConflito extends ErroAplicacao {
   readonly status = 409;
 }
