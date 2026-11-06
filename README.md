@@ -41,12 +41,12 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Edição de Usuário** · rota autenticada, só o próprio usuário, todos os campos obrigatórios, validação de CPF e de nível de senha, e-mail sem alteração | `src/rotas/perfil.ts`, `src/servicos/ServicoPerfil.ts`, `src/esquemas/usuario.ts` (`esquemaEdicao`), `src/dominio/Usuario.ts` (`editado` mantém o e-mail) | `testes/unidade/perfil.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
 | **Back-end · Configuração de Agentes** · `AGENTS.md`, 3 skills, guardrails e proteção do `.env` | `AGENTS.md` (regras e limites do agente); skills em `.claude/skills/` (`nova-tabela-sql`, `nova-rota-da-api`, `conferir-rubrica`); `.claude/settings.json` bloqueia ler ou editar o `.env`, apagar o banco, `push --force` e `reset --hard`, e pede confirmação para `git push` | — |
 | **Tech Forge · Tratamento de Exceções** | Erros próprios em `src/erros/ErroAplicacao.ts` (validação, credenciais, proibido, não encontrado, conflito, indisponível), traduzidos em `src/middlewares/tratarErros.ts` | `testes/unidade/perfil.test.ts`, `testes/unidade/invasao.test.ts` |
-| **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/06-listas.sql` (palavra → lista → usuário); também `mysql/02-palavras.sql` (palavra → categoria) e `mysql/05-resultados.sql` (resultado → usuário e palavra do dia) | `testes/integracao/listas.test.ts`, `testes/integracao/palavras.test.ts`, `testes/integracao/resultados.test.ts` |
-| **Back-end · Cruds Completos** · CRUDs com todas as rotas autenticadas (2 de 4: listas e palavras das listas) | `src/rotas/listas.ts`, `src/rotas/palavrasDasListas.ts` | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
-| **Back-end · Cruds Completos** · paginação das listagens | `src/esquemas/paginacao.ts` (`?pagina=` e `?porPagina=`), `src/repositorios/RepositorioMysql.ts` (`listarPagina`) | `testes/unidade/paginacao.test.ts`, `testes/integracao/repositorioListasMysql.test.ts` |
-| **Back-end · Cruds Completos** · não editar/deletar recursos que não existem | `src/servicos/ServicoComDono.ts` (`encontrarDoDono` dá `404` antes de editar ou apagar) | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
-| **Tech Forge · Tipagem Avançada e Recursos do TypeScript** | Generics em `src/dominio/Pagina.ts` (`Pagina<T>`) e `src/repositorios/RepositorioDeRecursos.ts` (interface usada pelos repositórios dos CRUDs); nenhum `any` no projeto | `testes/unidade/paginacao.test.ts` |
-| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros. Classes abstratas com reuso de verdade: `src/repositorios/RepositorioMysql.ts` (busca, paginação e conflito, para os repositórios dos CRUDs) e `src/servicos/ServicoComDono.ts`, em que cada CRUD sobrescreve como achar o recurso, quem é o dono e que erro dar (polimorfismo: `403` nas listas, `404` nas palavras) | `testes/unidade/partidaDiaria.test.ts`, `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts` |
+| **Back-end · Cruds Completos** · 4 CRUDs completos (sem contar o de usuários), todos com as rotas autenticadas | Listas (`src/rotas/listas.ts`), palavras das listas (`src/rotas/palavrasDasListas.ts`), salas (`src/rotas/salas.ts`) e participantes (`src/rotas/participantes.ts`) | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/participantes.test.ts` |
+| **Back-end · Cruds Completos** · paginação das listagens | `src/esquemas/paginacao.ts` (`?pagina=` e `?porPagina=`), `src/repositorios/RepositorioMysql.ts` (`listarPagina`, usado pelos 4 CRUDs) | `testes/unidade/paginacao.test.ts`, `testes/integracao/repositorioListasMysql.test.ts`, `testes/integracao/repositorioSalasMysql.test.ts` |
+| **Back-end · Cruds Completos** · não editar/deletar recursos que não existem | `src/servicos/ServicoComDono.ts` (`encontrarDoDono` dá `404` antes de editar ou apagar, nos 4 CRUDs) | os testes de `404` em `testes/unidade/listas.test.ts`, `palavrasDasListas.test.ts`, `salas.test.ts` e `participantes.test.ts` |
+| **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/06-listas.sql` (palavra → lista → usuário) e `mysql/07-salas.sql` (sala → usuário e lista; participante → sala e usuário); também `mysql/02-palavras.sql` e `mysql/05-resultados.sql` | `testes/integracao/listas.test.ts`, `testes/integracao/salas.test.ts`, `testes/integracao/resultados.test.ts` |
+| **Tech Forge · Tipagem Avançada e Recursos do TypeScript** | Generics em `src/dominio/Pagina.ts` (`Pagina<T>`) e `src/repositorios/RepositorioDeRecursos.ts` (interface dos 4 CRUDs, com tipo padrão no terceiro parâmetro); tipos derivados de `as const` em `src/dominio/Sala.ts`; `Pick` e `Omit` em `src/dominio/Participante.ts`; nenhum `any` no projeto | `testes/unidade/paginacao.test.ts`, `testes/unidade/salas.test.ts` |
+| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros. Herança com reuso de verdade: `src/dominio/SenhaCriptografada.ts`, de que herdam `Senha` (a da conta) e `SenhaDaSala`; `src/repositorios/RepositorioMysql.ts` (busca, paginação e erros do banco, para os 4 repositórios dos CRUDs); `src/servicos/ServicoComDono.ts`, em que cada CRUD sobrescreve como achar o recurso, quem é o dono e que erro dar (polimorfismo: `403` nas listas e nas salas, `404` nas palavras e nos participantes) | `testes/unidade/partidaDiaria.test.ts`, `testes/unidade/senha.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/participantes.test.ts` |
 | **Probabilidade e Estatística · Análise Descritiva** · métricas adequadas | `src/dominio/EstatisticasDoDia.ts`: quantos jogaram, quantos não acertaram e a distribuição por número de letras, que vira o histograma do dia no front | `testes/unidade/estatisticas.test.ts` |
 
 ### Exigências da disciplina
@@ -147,6 +147,16 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/listas/:listaId/palavras` | Com login, só o dono da lista. `palavra` (de 3 a 30 letras, com espaço ou hífen só entre as partes) e `dica` (opcional, de 2 a 80 caracteres). A palavra é guardada em maiúsculas e não se repete na lista. Devolve `201`. |
 | `PUT` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Edita `palavra` e `dica`. Mandar a `dica` vazia ou `null` tira a dica. |
 | `DELETE` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Devolve `204`. |
+| `GET` | `/salas` | Com login. As salas públicas que ainda não acabaram, das mais novas para as mais velhas e em páginas. Com `?filtro=minhas`, as salas em que a pessoa está, inclusive as com senha. |
+| `GET` | `/salas/:id` | Com login. Os dados de uma sala, para quem chega pelo link decidir se entra. A senha nunca aparece. |
+| `POST` | `/salas` | Com login. Cria a sala: `nome`, `segundosPorRodada` (45, 90 ou 120), `rodadas` (de 1 a 5), `maximoDeJogadores` (de 2 a 10), `listaId` (opcional, uma lista da própria pessoa) e `senha` (opcional, de 4 a 30 caracteres). Quem cria já entra na sala. Devolve `201`. |
+| `PUT` | `/salas/:id` | Com login, só quem criou e só antes da partida começar. Os mesmos campos da criação. Sem `senha`, a senha fica como está; com `null`, a sala fica pública. |
+| `DELETE` | `/salas/:id` | Com login, só quem criou. Apaga a sala e tira todo mundo dela. Devolve `204`. |
+| `GET` | `/salas/:salaId/participantes` | Com login, só quem está na sala. Os jogadores, na ordem em que chegaram, em páginas, com o dono marcado. |
+| `GET` | `/salas/:salaId/participantes/:id` | Com login, só quem está na sala. Um jogador. |
+| `POST` | `/salas/:salaId/participantes` | Com login. Entra na sala: `apelido` (de 2 a 20 caracteres, sem repetir na sala) e `senha`, se a sala tiver. Devolve `201`. |
+| `PUT` | `/salas/:salaId/participantes/:id` | Com login, só o próprio jogador. Troca o `apelido`. |
+| `DELETE` | `/salas/:salaId/participantes/:id` | Com login. O jogador sai, ou quem criou a sala tira alguém. Quem criou não sai: apaga a sala. Devolve `204`. |
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
@@ -174,6 +184,22 @@ eles, a API devolve a primeira página com 10 itens. A resposta é sempre igual:
 Mexer numa lista de outra pessoa dá `403`, e numa lista ou palavra que não existe
 dá `404`. Uma palavra pedida pela lista errada também dá `404`: para aquela
 lista, ela não existe.
+
+### Salas
+
+Só quem tem conta cria e entra em sala. Quem cria escolhe o tempo de cada rodada,
+quantas rodadas, quantos jogadores cabem, uma das próprias listas de palavras e,
+se quiser, uma senha. Sem senha, a sala aparece para todo mundo em `/salas`. Com
+senha, ela não aparece: quem cria manda o link, e quem chega digita a senha.
+
+A senha da sala é guardada com bcrypt, como a da conta (as duas herdam de
+`src/dominio/SenhaCriptografada.ts`), e nunca sai da API. Errar a senha muitas
+vezes bloqueia a entrada por 15 minutos, do mesmo jeito que o login.
+
+A sala recusa com `409` quem já está nela, o apelido repetido, a sala cheia e a
+sala encerrada. O próprio banco também recusa a sala cheia, com um gatilho em
+`mysql/07-salas.sql`, para dois jogadores que cheguem ao mesmo tempo não passarem
+do máximo.
 
 ### Palavra do dia
 
