@@ -111,6 +111,7 @@ O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
 | `04-palavras-do-dia.sql` | Qual palavra saiu em cada dia |
 | `05-resultados.sql` | O resultado de cada pessoa em cada dia: as letras chutadas, os erros e se acertou. Um por pessoa por dia. |
 | `06-listas.sql` | As listas de palavras de cada pessoa, usadas nas salas. O nome não se repete para a mesma pessoa, e cada palavra (com uma dica opcional) não se repete na mesma lista. Apagar a lista apaga as palavras dela. |
+| `07-salas.sql` | As salas (pública ou com senha, tempo de 45, 90 ou 120 s, de 1 a 5 rodadas, de 2 a 10 jogadores) e quem está em cada uma. A mesma pessoa e o mesmo apelido não se repetem na sala, e um gatilho recusa quem chega com a sala cheia. Apagar a lista deixa a sala sem lista. |
 
 Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
