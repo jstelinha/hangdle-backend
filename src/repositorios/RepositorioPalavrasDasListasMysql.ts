@@ -2,7 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import type { Pagina, PedidoDePagina } from "../dominio/Pagina.js";
 import type { PalavraDaLista } from "../dominio/PalavraDaLista.js";
 import type { DadosPalavra } from "../esquemas/palavraDaLista.js";
-import { RepositorioMysql } from "./RepositorioMysql.js";
+import { quandoRepetir, RepositorioMysql } from "./RepositorioMysql.js";
 import { erroPalavraRepetida, type RepositorioPalavrasDasListas } from "./RepositorioPalavrasDasListas.js";
 
 type LinhaPalavra = RowDataPacket & PalavraDaLista;
@@ -30,13 +30,17 @@ export class RepositorioPalavrasDasListasMysql
     const { insertId } = await this.gravar(
       "INSERT INTO palavras_das_listas (lista_id, texto, dica) VALUES (?, ?, ?)",
       [listaId, palavra, dica],
-      erroPalavraRepetida,
+      quandoRepetir(erroPalavraRepetida),
     );
     return { id: insertId, listaId, palavra, dica };
   }
 
   async atualizar(id: number, { palavra, dica }: DadosPalavra): Promise<void> {
-    await this.gravar("UPDATE palavras_das_listas SET texto = ?, dica = ? WHERE id = ?", [palavra, dica, id], erroPalavraRepetida);
+    await this.gravar(
+      "UPDATE palavras_das_listas SET texto = ?, dica = ? WHERE id = ?",
+      [palavra, dica, id],
+      quandoRepetir(erroPalavraRepetida),
+    );
   }
 
   async apagar(id: number): Promise<void> {

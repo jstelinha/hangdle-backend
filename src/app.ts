@@ -6,15 +6,19 @@ import { rotaNaoEncontrada, tratarErros } from "./middlewares/tratarErros.js";
 import type { RepositorioListas } from "./repositorios/RepositorioListas.js";
 import type { RepositorioPalavrasDasListas } from "./repositorios/RepositorioPalavrasDasListas.js";
 import type { RepositorioPalavrasDoDia } from "./repositorios/RepositorioPalavrasDoDia.js";
+import type { RepositorioParticipantes } from "./repositorios/RepositorioParticipantes.js";
 import type { RepositorioResultados } from "./repositorios/RepositorioResultados.js";
+import type { RepositorioSalas } from "./repositorios/RepositorioSalas.js";
 import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasEstatisticas } from "./rotas/estatisticas.js";
 import { rotasListas } from "./rotas/listas.js";
 import { rotasPalavrasDasListas } from "./rotas/palavrasDasListas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
+import { rotasParticipantes } from "./rotas/participantes.js";
 import { rotasPerfil } from "./rotas/perfil.js";
 import { rotasResultados } from "./rotas/resultados.js";
+import { rotasSalas } from "./rotas/salas.js";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasUsuarios } from "./rotas/usuarios.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
@@ -22,8 +26,10 @@ import { ServicoCadastro } from "./servicos/ServicoCadastro.js";
 import { ServicoListas } from "./servicos/ServicoListas.js";
 import { ServicoPalavrasDasListas } from "./servicos/ServicoPalavrasDasListas.js";
 import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
+import { ServicoParticipantes } from "./servicos/ServicoParticipantes.js";
 import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
+import { ServicoSalas } from "./servicos/ServicoSalas.js";
 
 export type DependenciasApp = {
   usuarios: RepositorioUsuarios;
@@ -31,6 +37,8 @@ export type DependenciasApp = {
   resultados: RepositorioResultados;
   listas: RepositorioListas;
   palavrasDasListas: RepositorioPalavrasDasListas;
+  salas: RepositorioSalas;
+  participantes: RepositorioParticipantes;
   agora: () => Date;
   verificarBanco: () => Promise<void>;
   token: ConfiguracaoToken;
@@ -42,10 +50,12 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const app = express();
   const limiteCadastro = limitarTentativas(dependencias.tentativasPorJanela);
   const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
+  const limiteEntradaNaSala = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const login = exigirLogin(dependencias.token.segredo);
-  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, agora } = dependencias;
+  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
   const servicoListas = new ServicoListas(listas);
+  const servicoSalas = new ServicoSalas(salas, participantes, servicoListas, usuarios);
 
   app.disable("x-powered-by");
   // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
@@ -62,6 +72,8 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasResultados(servicoResultados, login));
   app.use(rotasListas(servicoListas, login));
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
+  app.use(rotasSalas(servicoSalas, login));
+  app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas), login, limiteEntradaNaSala));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);

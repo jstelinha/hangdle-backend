@@ -1,6 +1,8 @@
 import { criarApp } from "../../src/app.js";
 import { RepositorioListasMemoria } from "./RepositorioListasMemoria.js";
 import { RepositorioPalavrasDasListasMemoria } from "./RepositorioPalavrasDasListasMemoria.js";
+import { RepositorioParticipantesMemoria } from "./RepositorioParticipantesMemoria.js";
+import { RepositorioSalasMemoria } from "./RepositorioSalasMemoria.js";
 import { RepositorioPalavrasDoDiaMemoria, type PalavraCadastrada } from "./RepositorioPalavrasDoDiaMemoria.js";
 import { RepositorioResultadosMemoria } from "./RepositorioResultadosMemoria.js";
 import { RepositorioUsuariosMemoria } from "./RepositorioUsuariosMemoria.js";
@@ -39,17 +41,21 @@ export function criarAppTeste({
 }: OpcoesAppTeste = {}) {
   const usuarios = new RepositorioUsuariosMemoria();
   const palavrasDasListas = new RepositorioPalavrasDasListasMemoria();
+  const salas: RepositorioSalasMemoria = new RepositorioSalasMemoria(() => participantes);
+  const participantes = new RepositorioParticipantesMemoria((salaId) => salas.dadosDaSala(salaId));
   const app = criarApp({
     usuarios,
     palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
     resultados: new RepositorioResultadosMemoria(),
     listas: new RepositorioListasMemoria((listaId) => palavrasDasListas.contar(listaId)),
     palavrasDasListas,
+    salas,
+    participantes,
     agora,
     verificarBanco: async () => {},
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },
     corsOrigens: ["http://localhost"],
     tentativasPorJanela,
   });
-  return { app, usuarios };
+  return { app, usuarios, salas };
 }

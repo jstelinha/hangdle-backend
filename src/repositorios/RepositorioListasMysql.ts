@@ -3,7 +3,7 @@ import type { Lista } from "../dominio/Lista.js";
 import type { Pagina, PedidoDePagina } from "../dominio/Pagina.js";
 import type { DadosLista } from "../esquemas/lista.js";
 import { erroListaRepetida, type RepositorioListas } from "./RepositorioListas.js";
-import { RepositorioMysql } from "./RepositorioMysql.js";
+import { quandoRepetir, RepositorioMysql } from "./RepositorioMysql.js";
 
 type LinhaLista = RowDataPacket & {
   id: number;
@@ -32,12 +32,16 @@ export class RepositorioListasMysql extends RepositorioMysql<LinhaLista, Lista> 
   }
 
   async criar(usuarioId: number, { nome }: DadosLista): Promise<Lista> {
-    const { insertId } = await this.gravar("INSERT INTO listas (usuario_id, nome) VALUES (?, ?)", [usuarioId, nome], erroListaRepetida);
+    const { insertId } = await this.gravar(
+      "INSERT INTO listas (usuario_id, nome) VALUES (?, ?)",
+      [usuarioId, nome],
+      quandoRepetir(erroListaRepetida),
+    );
     return { id: insertId, usuarioId, nome, totalDePalavras: 0 };
   }
 
   async atualizar(id: number, { nome }: DadosLista): Promise<void> {
-    await this.gravar("UPDATE listas SET nome = ? WHERE id = ?", [nome, id], erroListaRepetida);
+    await this.gravar("UPDATE listas SET nome = ? WHERE id = ?", [nome, id], quandoRepetir(erroListaRepetida));
   }
 
   async apagar(id: number): Promise<void> {
