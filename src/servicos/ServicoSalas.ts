@@ -11,6 +11,8 @@ import { ServicoComDono } from "./ServicoComDono.js";
 import type { ServicoListas } from "./ServicoListas.js";
 
 const PARTIDA_COMECOU = "A partida já começou. Não dá mais para mudar a sala.";
+const PEDE_SENHA = "Esta sala tem senha. Digite a senha para entrar.";
+const SENHA_ERRADA = "Senha da sala incorreta.";
 
 export class ServicoSalas extends ServicoComDono<Sala> {
   protected override readonly naoEncontrado = "Sala não encontrada.";
@@ -70,6 +72,19 @@ export class ServicoSalas extends ServicoComDono<Sala> {
   async apagar(usuarioId: number, id: number): Promise<void> {
     await this.encontrarDoDono(usuarioId, id);
     await this.#salas.apagar(id);
+  }
+
+  async conferirSenha(sala: Sala, senha: string | null | undefined): Promise<void> {
+    if (!sala.privada) {
+      return;
+    }
+    if (!senha) {
+      throw new ErroProibido(PEDE_SENHA, { senha: PEDE_SENHA });
+    }
+    const guardada = await this.#salas.buscarSenha(sala.id);
+    if (!guardada || !(await guardada.confere(senha))) {
+      throw new ErroProibido(SENHA_ERRADA, { senha: SENHA_ERRADA });
+    }
   }
 
   protected override buscarPorId(id: number): Promise<Sala | null> {
