@@ -4,6 +4,8 @@ import { lerAmbiente } from "./config/ambiente.js";
 import { RepositorioListasMysql } from "./repositorios/RepositorioListasMysql.js";
 import { RepositorioPalavrasDasListasMysql } from "./repositorios/RepositorioPalavrasDasListasMysql.js";
 import { RepositorioPalavrasDoDiaMysql } from "./repositorios/RepositorioPalavrasDoDiaMysql.js";
+import { RepositorioParticipantesMysql } from "./repositorios/RepositorioParticipantesMysql.js";
+import { RepositorioSalasMysql } from "./repositorios/RepositorioSalasMysql.js";
 import { RepositorioResultadosMysql } from "./repositorios/RepositorioResultadosMysql.js";
 import { RepositorioUsuariosMysql } from "./repositorios/RepositorioUsuariosMysql.js";
 
@@ -16,6 +18,8 @@ const app = criarApp({
   resultados: new RepositorioResultadosMysql(banco),
   listas: new RepositorioListasMysql(banco),
   palavrasDasListas: new RepositorioPalavrasDasListasMysql(banco),
+  salas: new RepositorioSalasMysql(banco),
+  participantes: new RepositorioParticipantesMysql(banco),
   agora: () => new Date(),
   verificarBanco: async () => {
     await banco.query("SELECT 1");

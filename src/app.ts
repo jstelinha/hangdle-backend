@@ -6,7 +6,9 @@ import { rotaNaoEncontrada, tratarErros } from "./middlewares/tratarErros.js";
 import type { RepositorioListas } from "./repositorios/RepositorioListas.js";
 import type { RepositorioPalavrasDasListas } from "./repositorios/RepositorioPalavrasDasListas.js";
 import type { RepositorioPalavrasDoDia } from "./repositorios/RepositorioPalavrasDoDia.js";
+import type { RepositorioParticipantes } from "./repositorios/RepositorioParticipantes.js";
 import type { RepositorioResultados } from "./repositorios/RepositorioResultados.js";
+import type { RepositorioSalas } from "./repositorios/RepositorioSalas.js";
 import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasEstatisticas } from "./rotas/estatisticas.js";
@@ -15,6 +17,7 @@ import { rotasPalavrasDasListas } from "./rotas/palavrasDasListas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
 import { rotasPerfil } from "./rotas/perfil.js";
 import { rotasResultados } from "./rotas/resultados.js";
+import { rotasSalas } from "./rotas/salas.js";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasUsuarios } from "./rotas/usuarios.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
@@ -24,6 +27,7 @@ import { ServicoPalavrasDasListas } from "./servicos/ServicoPalavrasDasListas.js
 import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
 import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
+import { ServicoSalas } from "./servicos/ServicoSalas.js";
 
 export type DependenciasApp = {
   usuarios: RepositorioUsuarios;
@@ -31,6 +35,8 @@ export type DependenciasApp = {
   resultados: RepositorioResultados;
   listas: RepositorioListas;
   palavrasDasListas: RepositorioPalavrasDasListas;
+  salas: RepositorioSalas;
+  participantes: RepositorioParticipantes;
   agora: () => Date;
   verificarBanco: () => Promise<void>;
   token: ConfiguracaoToken;
@@ -43,7 +49,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const limiteCadastro = limitarTentativas(dependencias.tentativasPorJanela);
   const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const login = exigirLogin(dependencias.token.segredo);
-  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, agora } = dependencias;
+  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
   const servicoListas = new ServicoListas(listas);
 
@@ -62,6 +68,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasResultados(servicoResultados, login));
   app.use(rotasListas(servicoListas, login));
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
+  app.use(rotasSalas(new ServicoSalas(salas, participantes, servicoListas, usuarios), login));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);
