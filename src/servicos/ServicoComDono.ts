@@ -2,6 +2,7 @@ import { ErroNaoEncontrado, type ErroAplicacao } from "../erros/ErroAplicacao.js
 
 // O "dono" é quem agrupa os recursos: a pessoa, para as listas; a lista, para as palavras.
 // Rubrica de Tech Forge - Modelagem do Domínio e Pilares da POO - Classe abstrata: cada CRUD diz como achar o recurso, quem é o dono e que erro dar
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Aberto para extensão: cada CRUD novo herda e sobrescreve, sem mudar esta classe
 export abstract class ServicoComDono<Recurso> {
   protected abstract readonly naoEncontrado: string;
 

@@ -34,6 +34,7 @@ import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
 import { ServicoSalas } from "./servicos/ServicoSalas.js";
 
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Inversão de dependência: os serviços recebem os repositórios pela interface; o server.ts passa os do MySQL, e os testes, os em memória
 export type DependenciasApp = {
   usuarios: RepositorioUsuarios;
   palavrasDoDia: RepositorioPalavrasDoDia;

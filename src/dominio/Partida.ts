@@ -14,6 +14,7 @@ function letraBase(caractere: string): string {
 }
 
 // Rubrica de Tech Forge - Modelagem do Domínio e Pilares da POO - Classe abstrata com a regra da forca, comum à partida diária e à partida na sala
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Substituição de Liskov: a partida diária e a da sala só acrescentam, e mantêm chutarLetra, erros, acertou e casas como aqui
 export abstract class Partida {
   readonly #palavra: string;
   readonly #daPalavra: ReadonlySet<string>;

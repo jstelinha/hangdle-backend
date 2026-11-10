@@ -4,6 +4,7 @@ import { usuarioLogado } from "../middlewares/exigirLogin.js";
 import type { ServicoSalas } from "../servicos/ServicoSalas.js";
 
 // Rubrica de Back-end - Cruds Completos - 4 CRUDS com todas as rotas autenticadas
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Responsabilidade única: a rota valida e responde, o serviço guarda a regra e o repositório fala com o banco
 export function rotasSalas(salas: ServicoSalas, exigirLogin: RequestHandler): Router {
   const rotas = Router();
 
