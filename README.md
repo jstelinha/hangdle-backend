@@ -30,7 +30,7 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Cadastro de Usuário** · validação de CPF | `src/dominio/Cpf.ts`; o banco também recusa, com um gatilho em `mysql/01-usuarios.sql` | `testes/unidade/cpf.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
 | **Back-end · Cadastro de Usuário** · validação de nível de senha | `src/dominio/Senha.ts` | `testes/unidade/senha.test.ts` |
 | **Back-end · Cadastro de Usuário** · validação de email | `src/dominio/Email.ts`, `mysql/01-usuarios.sql` | `testes/unidade/email.test.ts` |
-| **Tech Forge · Encapsulamento e Proteção do Estado** | Campos privados `#` em `src/dominio/Cpf.ts`; construtor privado em `src/dominio/Senha.ts` (só nasce por `Senha.criar`, que valida e criptografa) | `testes/unidade/cpf.test.ts`, `testes/unidade/senha.test.ts` |
+| **Tech Forge · Encapsulamento e Proteção do Estado** | Campos privados `#` em `src/dominio/Cpf.ts` e em `src/dominio/ChutesDaVez.ts` (as forcas de todos numa vez só mudam por `chutar`, que também guarda quem acertou primeiro); construtor privado em `src/dominio/Senha.ts` (só nasce por `Senha.criar`, que valida e criptografa) | `testes/unidade/cpf.test.ts`, `testes/unidade/senha.test.ts`, `testes/unidade/regrasDaSala.test.ts` |
 | **Tech Forge · Acesso Controlado e Propriedades** | `get` só onde há regra, em `src/dominio/Email.ts`; `src/dominio/Usuario.ts` não expõe CPF nem hash | `testes/unidade/cadastro.test.ts` |
 
 ### Adiantado da Sprint 2
@@ -45,8 +45,8 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Cruds Completos** · paginação das listagens | `src/esquemas/paginacao.ts` (`?pagina=` e `?porPagina=`), `src/repositorios/RepositorioMysql.ts` (`listarPagina`, usado pelos 4 CRUDs) | `testes/unidade/paginacao.test.ts`, `testes/integracao/repositorioListasMysql.test.ts`, `testes/integracao/repositorioSalasMysql.test.ts` |
 | **Back-end · Cruds Completos** · não editar/deletar recursos que não existem | `src/servicos/ServicoComDono.ts` (`encontrarDoDono` dá `404` antes de editar ou apagar, nos 4 CRUDs) | os testes de `404` em `testes/unidade/listas.test.ts`, `palavrasDasListas.test.ts`, `salas.test.ts` e `participantes.test.ts` |
 | **Back-end · Cruds Completos** · ao menos 1 relacionamento entre os recursos | `mysql/06-listas.sql` (palavra → lista → usuário) e `mysql/07-salas.sql` (sala → usuário e lista; participante → sala e usuário); também `mysql/02-palavras.sql` e `mysql/05-resultados.sql` | `testes/integracao/listas.test.ts`, `testes/integracao/salas.test.ts`, `testes/integracao/resultados.test.ts` |
-| **Tech Forge · Tipagem Avançada e Recursos do TypeScript** | Generics em `src/dominio/Pagina.ts` (`Pagina<T>`) e `src/repositorios/RepositorioDeRecursos.ts` (interface dos 4 CRUDs, com tipo padrão no terceiro parâmetro); tipos derivados de `as const` em `src/dominio/Sala.ts`; `Pick` e `Omit` em `src/dominio/Participante.ts`; nenhum `any` no projeto | `testes/unidade/paginacao.test.ts`, `testes/unidade/salas.test.ts` |
-| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/PartidaDiaria.ts` refaz a partida a partir das letras chutadas e calcula os erros. Herança com reuso de verdade: `src/dominio/SenhaCriptografada.ts`, de que herdam `Senha` (a da conta) e `SenhaDaSala`; `src/repositorios/RepositorioMysql.ts` (busca, paginação e erros do banco, para os 4 repositórios dos CRUDs); `src/servicos/ServicoComDono.ts`, em que cada CRUD sobrescreve como achar o recurso, quem é o dono e que erro dar (polimorfismo: `403` nas listas e nas salas, `404` nas palavras e nos participantes) | `testes/unidade/partidaDiaria.test.ts`, `testes/unidade/senha.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/participantes.test.ts` |
+| **Tech Forge · Tipagem Avançada e Recursos do TypeScript** | Generics em `src/dominio/Pagina.ts` (`Pagina<T>`) e `src/repositorios/RepositorioDeRecursos.ts` (interface dos 4 CRUDs, com tipo padrão no terceiro parâmetro); tipos derivados de `as const` em `src/dominio/Sala.ts`; `Pick` e `Omit` em `src/dominio/Participante.ts`; `Exclude` e `Omit` em `src/dominio/EstadoDaPartida.ts`; uniões discriminadas em `src/dominio/Partida.ts` (`LetraRecusada`) e `src/esquemas/partida.ts` (`DadosEscolha`); nenhum `any` no projeto | `testes/unidade/paginacao.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/partidaNaSala.test.ts` |
+| **Tech Forge · Modelagem do Domínio e Pilares da POO** | `src/dominio/Partida.ts`, classe abstrata com a regra da forca, de que herdam `PartidaDiaria` (refaz a partida do dia a partir das letras chutadas) e `PartidaNaSala` (recebe uma letra por vez e dá os pontos); cada uma sobrescreve `recusar` (polimorfismo: a letra repetida ou depois do fim vira `400` no resultado do dia e `409` na sala). Herança com reuso de verdade também em `src/dominio/SenhaCriptografada.ts`, de que herdam `Senha` (a da conta) e `SenhaDaSala`; `src/repositorios/RepositorioMysql.ts` (busca, paginação e erros do banco, para os 4 repositórios dos CRUDs); `src/servicos/ServicoComDono.ts`, em que cada CRUD sobrescreve como achar o recurso, quem é o dono e que erro dar (polimorfismo: `403` nas listas e nas salas, `404` nas palavras e nos participantes) | `testes/unidade/partidaDiaria.test.ts`, `testes/unidade/regrasDaSala.test.ts`, `testes/unidade/senha.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/participantes.test.ts` |
 | **Probabilidade e Estatística · Análise Descritiva** · métricas adequadas | `src/dominio/EstatisticasDoDia.ts`: quantos jogaram, quantos não acertaram e a distribuição por número de letras, que vira o histograma do dia no front | `testes/unidade/estatisticas.test.ts` |
 
 ### Exigências da disciplina
@@ -158,6 +158,10 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/salas/:salaId/participantes` | Com login. Entra na sala: `apelido` (de 2 a 20 caracteres, sem repetir na sala) e `senha`, se a sala tiver. Devolve `201`. |
 | `PUT` | `/salas/:salaId/participantes/:id` | Com login, só o próprio jogador. Troca o `apelido`. |
 | `DELETE` | `/salas/:salaId/participantes/:id` | Com login. O jogador sai, ou quem criou a sala tira alguém. Quem criou não sai: apaga a sala. Devolve `204`. |
+| `GET` | `/salas/:salaId/partida` | Com login, só quem está na sala. Como está a partida para quem pergunta: a vez, a fase, os segundos que faltam, a própria forca, o andamento dos outros, o resultado da vez anterior e o placar. O front pergunta a cada segundo. |
+| `POST` | `/salas/:salaId/partida` | Com login, só quem criou a sala, com pelo menos 2 jogadores. Começa a partida. Devolve `201`. |
+| `POST` | `/salas/:salaId/partida/palavra` | Com login, só quem está na vez, enquanto escolhe. Com lista, `palavraId` (uma das 3 opções); sem lista, `palavra` e `dica` (opcional), com as regras das listas. |
+| `POST` | `/salas/:salaId/partida/letras` | Com login, só quem está adivinhando. Chuta uma `letra` de A a Z. |
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
@@ -201,6 +205,37 @@ A sala recusa com `409` quem já está nela, o apelido repetido, a sala cheia e 
 sala encerrada. O próprio banco também recusa a sala cheia, com um gatilho em
 `mysql/07-salas.sql`, para dois jogadores que cheguem ao mesmo tempo não passarem
 do máximo.
+
+### Partida na sala
+
+Em cada rodada, cada jogador escolhe uma palavra uma vez, na ordem em que entrou
+na sala, e os outros adivinham ao mesmo tempo, cada um com a própria forca. Com 4
+jogadores e 2 rodadas, saem 8 palavras. Cada palavra é uma **vez**, que passa por
+três fases:
+
+1. **Escolhendo** (20 s): com lista, quem está na vez escolhe uma de 3 palavras
+   sorteadas da lista entre as que ainda não saíram; sem lista, ou com a lista
+   acabada, digita a palavra e uma dica. Se não escolher a tempo, a API sorteia:
+   da lista ou, sem lista, das palavras oficiais, com a categoria como dica.
+2. **Adivinhando** (o tempo da sala: 45, 90 ou 120 s): cada um chuta as letras na
+   própria forca, com 6 erros. A vez acaba quando o tempo acaba ou quando todos
+   terminam.
+3. **Intervalo** (5 s): todos veem a palavra e os pontos antes da próxima vez.
+
+Acertar vale 100 pontos, menos 10 por erro, e o primeiro a acertar ganha mais 20.
+Quem escolheu ganha 10 por pessoa que acertou. Depois da última vez, a sala fica
+`encerrada` com o placar final.
+
+A palavra fica só na API: quem adivinha recebe as casas abertas da própria
+forca e, dos outros, só os erros e quantas casas já abriram. A API confere cada
+letra (`src/dominio/PartidaNaSala.ts`).
+
+A partida não tem relógio no servidor. Cada pergunta à sala faz a partida andar
+até o momento atual (`src/servicos/ServicoPartidaNaSala.ts`), e o banco aceita
+cada mudança só uma vez, para dois jogadores que perguntem juntos não criarem a
+mesma vez nem somarem os pontos duas vezes. Quem chega no meio entra no fim da
+fila. Se quem está na vez sai, a vez passa para o próximo; se fica só uma pessoa
+na sala, a partida acaba.
 
 ### Palavra do dia
 
