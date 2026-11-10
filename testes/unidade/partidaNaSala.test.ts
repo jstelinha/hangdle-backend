@@ -141,6 +141,7 @@ describe("POST /salas/:salaId/partida/palavra", () => {
     expect(daLarissa.status).toBe(200);
     expect(daLarissa.body.vez).toMatchObject({ fase: "adivinhando", segundosRestantes: 90, palavra: "PÃO DE QUEIJO", minhaForca: null });
     expect(daBruna.body.vez).toMatchObject({ palavra: null, dica: "Mineiro" });
+    expect(daBruna.body.vez.forcas[0]).toMatchObject({ apelido: "Bru", casasAbertas: 0 });
     expect(daBruna.body.vez.minhaForca.casas).toEqual([null, null, null, " ", null, null, " ", null, null, null, null, null, null]);
     expect(JSON.stringify(daBruna.body)).not.toContain("QUEIJO");
   });

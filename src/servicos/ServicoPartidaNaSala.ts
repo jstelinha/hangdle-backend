@@ -251,7 +251,7 @@ export class ServicoPartidaNaSala {
               {
                 ...this.#jogador(jogadores, id),
                 erros: partida.erros,
-                casasAbertas: partida.casas.filter((casa) => casa !== null).length,
+                casasAbertas: partida.casas.filter((casa) => casa !== null && /\p{L}/u.test(casa)).length,
                 acertou: partida.acertou,
                 terminou: partida.terminou,
               },
