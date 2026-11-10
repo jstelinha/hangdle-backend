@@ -8,6 +8,7 @@ import { RepositorioParticipantesMysql } from "./repositorios/RepositorioPartici
 import { RepositorioSalasMysql } from "./repositorios/RepositorioSalasMysql.js";
 import { RepositorioResultadosMysql } from "./repositorios/RepositorioResultadosMysql.js";
 import { RepositorioUsuariosMysql } from "./repositorios/RepositorioUsuariosMysql.js";
+import { RepositorioVezesMysql } from "./repositorios/RepositorioVezesMysql.js";
 
 const ambiente = lerAmbiente();
 const banco = criarConexao(ambiente);
@@ -20,6 +21,7 @@ const app = criarApp({
   palavrasDasListas: new RepositorioPalavrasDasListasMysql(banco),
   salas: new RepositorioSalasMysql(banco),
   participantes: new RepositorioParticipantesMysql(banco),
+  vezes: new RepositorioVezesMysql(banco),
   agora: () => new Date(),
   verificarBanco: async () => {
     await banco.query("SELECT 1");

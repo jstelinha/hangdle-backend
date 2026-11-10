@@ -10,11 +10,13 @@ import type { RepositorioParticipantes } from "./repositorios/RepositorioPartici
 import type { RepositorioResultados } from "./repositorios/RepositorioResultados.js";
 import type { RepositorioSalas } from "./repositorios/RepositorioSalas.js";
 import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js";
+import type { RepositorioVezes } from "./repositorios/RepositorioVezes.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasEstatisticas } from "./rotas/estatisticas.js";
 import { rotasListas } from "./rotas/listas.js";
 import { rotasPalavrasDasListas } from "./rotas/palavrasDasListas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
+import { rotasPartidaNaSala } from "./rotas/partidaNaSala.js";
 import { rotasParticipantes } from "./rotas/participantes.js";
 import { rotasPerfil } from "./rotas/perfil.js";
 import { rotasResultados } from "./rotas/resultados.js";
@@ -27,6 +29,7 @@ import { ServicoListas } from "./servicos/ServicoListas.js";
 import { ServicoPalavrasDasListas } from "./servicos/ServicoPalavrasDasListas.js";
 import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
 import { ServicoParticipantes } from "./servicos/ServicoParticipantes.js";
+import { ServicoPartidaNaSala } from "./servicos/ServicoPartidaNaSala.js";
 import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
 import { ServicoSalas } from "./servicos/ServicoSalas.js";
@@ -39,6 +42,7 @@ export type DependenciasApp = {
   palavrasDasListas: RepositorioPalavrasDasListas;
   salas: RepositorioSalas;
   participantes: RepositorioParticipantes;
+  vezes: RepositorioVezes;
   agora: () => Date;
   verificarBanco: () => Promise<void>;
   token: ConfiguracaoToken;
@@ -52,7 +56,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const limiteEntradaNaSala = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const login = exigirLogin(dependencias.token.segredo);
-  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, agora } = dependencias;
+  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
   const servicoListas = new ServicoListas(listas);
   const servicoSalas = new ServicoSalas(salas, participantes, servicoListas, usuarios);
@@ -74,6 +78,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
   app.use(rotasSalas(servicoSalas, login));
   app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas), login, limiteEntradaNaSala));
+  app.use(rotasPartidaNaSala(new ServicoPartidaNaSala(servicoSalas, participantes, vezes, agora), login));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);

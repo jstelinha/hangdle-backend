@@ -42,6 +42,10 @@ export class RepositorioPalavrasDasListasMemoria implements RepositorioPalavrasD
     return this.#daLista(listaId).length;
   }
 
+  todasDaLista(listaId: number): PalavraDaLista[] {
+    return this.#daLista(listaId);
+  }
+
   #daLista(listaId: number): PalavraDaLista[] {
     return [...this.#palavras.values()].filter((palavra) => palavra.listaId === listaId);
   }

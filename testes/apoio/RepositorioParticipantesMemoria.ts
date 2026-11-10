@@ -73,6 +73,23 @@ export class RepositorioParticipantesMemoria implements RepositorioParticipantes
     return this.#daSala(salaId).length;
   }
 
+  existe(id: number): boolean {
+    return this.#participantes.has(id);
+  }
+
+  zerarPontos(salaId: number): void {
+    for (const participante of this.#daSala(salaId)) {
+      this.#participantes.set(participante.id, { ...participante, pontos: 0 });
+    }
+  }
+
+  somarPontos(id: number, pontos: number): void {
+    const registro = this.#participantes.get(id);
+    if (registro) {
+      this.#participantes.set(id, { ...registro, pontos: registro.pontos + pontos });
+    }
+  }
+
   participa(salaId: number, usuarioId: number): boolean {
     return this.#daSala(salaId).some((participante) => participante.usuarioId === usuarioId);
   }

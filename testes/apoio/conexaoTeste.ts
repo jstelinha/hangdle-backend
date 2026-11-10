@@ -11,7 +11,7 @@ export function conectarBancoDeTeste(): Promise<Connection> {
   });
 }
 
-const TABELAS_DO_JOGO = ["participantes", "salas", "palavras_das_listas", "listas", "resultados_diarios", "palavras_do_dia", "palavras", "categorias"];
+const TABELAS_DO_JOGO = ["letras_chutadas", "vezes", "participantes", "salas", "palavras_das_listas", "listas", "resultados_diarios", "palavras_do_dia", "palavras", "categorias"];
 
 export async function esvaziarTabelasDoJogo(conexao: Connection): Promise<void> {
   for (const tabela of TABELAS_DO_JOGO) {

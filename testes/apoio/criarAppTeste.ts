@@ -6,6 +6,7 @@ import { RepositorioSalasMemoria } from "./RepositorioSalasMemoria.js";
 import { RepositorioPalavrasDoDiaMemoria, type PalavraCadastrada } from "./RepositorioPalavrasDoDiaMemoria.js";
 import { RepositorioResultadosMemoria } from "./RepositorioResultadosMemoria.js";
 import { RepositorioUsuariosMemoria } from "./RepositorioUsuariosMemoria.js";
+import { RepositorioVezesMemoria } from "./RepositorioVezesMemoria.js";
 
 export const SEGREDO_TESTE = "segredo-so-para-teste-com-mais-de-32-caracteres";
 
@@ -43,6 +44,7 @@ export function criarAppTeste({
   const palavrasDasListas = new RepositorioPalavrasDasListasMemoria();
   const salas: RepositorioSalasMemoria = new RepositorioSalasMemoria(() => participantes);
   const participantes = new RepositorioParticipantesMemoria((salaId) => salas.dadosDaSala(salaId));
+  const vezes = new RepositorioVezesMemoria(salas, participantes, palavrasDasListas, palavras);
   const app = criarApp({
     usuarios,
     palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
@@ -51,6 +53,7 @@ export function criarAppTeste({
     palavrasDasListas,
     salas,
     participantes,
+    vezes,
     agora,
     verificarBanco: async () => {},
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },
