@@ -5,6 +5,7 @@ export const SEGUNDOS_ENTRE_AS_VEZES = 5;
 export type FaseDaVez = "intervalo" | "escolhendo" | "adivinhando" | "terminada";
 
 export type PalavraEscolhida = { palavra: string; dica: string | null };
+export type OpcaoDePalavra = PalavraEscolhida & { id: number };
 
 export type RegistroVez = {
   id: number;

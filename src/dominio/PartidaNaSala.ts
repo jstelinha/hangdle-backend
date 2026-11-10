@@ -8,6 +8,11 @@ export const PONTOS = {
   deQuemEscolheuPorAcerto: 10,
 } as const;
 
+export function erroLetraRepetida(letra: string): ErroConflito {
+  const mensagem = `Você já chutou a letra ${letra}.`;
+  return new ErroConflito(mensagem, { letra: mensagem });
+}
+
 // A forca de um jogador numa vez da sala: as letras chegam uma por uma, enquanto o tempo corre.
 export class PartidaNaSala extends Partida {
   constructor(palavra: string) {
@@ -32,7 +37,7 @@ export class PartidaNaSala extends Partida {
       case "invalida":
         return new ErroValidacao("Envie uma letra de A a Z.", { letra: "Envie uma letra de A a Z." });
       case "repetida":
-        return new ErroConflito(`Você já chutou a letra ${recusa.letra}.`, { letra: `Você já chutou a letra ${recusa.letra}.` });
+        return erroLetraRepetida(recusa.letra);
       case "depoisDoFim":
         return new ErroConflito("A sua forca nesta vez já terminou.");
     }
