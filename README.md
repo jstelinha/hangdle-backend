@@ -92,7 +92,7 @@ O comando sobe um projeto chamado `cade` com quatro containers:
 |---|---|
 | `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com os arquivos da pasta `mysql/`. |
 | `hangdle_backend` | Esta API, na porta 3000 dentro do Docker. Não tem porta fora dele: a API só é acessível pelo nginx, em `/api/`. Só liga depois que o MySQL responde. |
-| `hangdle_frontend` | O front (Vite), que vem de `../hangdle-frontend`. |
+| `hangdle_frontend` | O front já compilado (`npm run build`), que vem de `../hangdle-frontend` e é servido por um nginx próprio, na porta 80 dentro do Docker. Depois de mudar o front, rode o `up -d --build` de novo. |
 | `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. |
 
 Todos têm `restart: always`, então voltam sozinhos quando o Docker é ligado de
