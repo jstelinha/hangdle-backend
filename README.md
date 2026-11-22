@@ -86,7 +86,7 @@ uma-pasta-qualquer/
 3. Abra `http://localhost`. A API responde pelo nginx em `http://localhost/api/`
    (por exemplo, `http://localhost/api/saude`).
 
-O comando sobe um projeto chamado `cade` com quatro containers:
+O comando sobe um projeto chamado `hangdle` com quatro containers:
 
 | Container | O que roda |
 |---|---|
