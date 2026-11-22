@@ -55,6 +55,7 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | Exigência | Onde está |
 |---|---|
 | Docker | `Dockerfile`, `docker-compose.yml` |
+| Só o nginx exposto (rede do Docker) | `docker-compose.yml`: só o `nginx` tem `ports`; as portas para desenvolver ficam em `docker-compose.dev.yml` |
 | nginx | `nginx.conf` |
 | zod | `src/esquemas/usuario.ts` |
 | Testes automáticos | `testes/` e `.github/workflows/testes.yml` |
@@ -90,15 +91,35 @@ O comando sobe um projeto chamado `cade` com quatro containers:
 | Container | O que roda |
 |---|---|
 | `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com os arquivos da pasta `mysql/`. |
-| `hangdle_backend` | Esta API, na porta 3000, aberta só para este computador (`127.0.0.1:3000`). De outra máquina, a API só é acessível pelo nginx. Só liga depois que o MySQL responde. |
+| `hangdle_backend` | Esta API, na porta 3000 dentro do Docker. Não tem porta fora dele: a API só é acessível pelo nginx, em `/api/`. Só liga depois que o MySQL responde. |
 | `hangdle_frontend` | O front (Vite), que vem de `../hangdle-frontend`. |
 | `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. |
 
 Todos têm `restart: always`, então voltam sozinhos quando o Docker é ligado de
 novo.
 
-O MySQL fica em `127.0.0.1:3306`, aberto só para este computador. No DBeaver, use
-o usuário e a senha do `.env` e ligue `allowPublicKeyRetrieval=true`.
+Só o nginx tem porta fora do Docker (a 80). A API e o MySQL ficam nas redes
+internas do compose e não respondem em `127.0.0.1:3000` nem em `127.0.0.1:3306`.
+
+### Portas para desenvolver: `docker-compose.dev.yml`
+
+Para usar o DBeaver, rodar o `npm run test:integracao` nesta máquina ou rodar o
+front com `npm run dev`, suba o compose junto com o `docker-compose.dev.yml`. Ele
+abre a API em `127.0.0.1:3000` e o MySQL em `127.0.0.1:3306`, só para este
+computador:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+Para fechar as portas de novo, rode `docker compose up -d` sem o arquivo dev. Para
+rodar o projeto normalmente, ou para avaliar, use só o `docker-compose.yml`.
+
+O arquivo não se chama `docker-compose.override.yml` de propósito: esse nome o
+compose lê sozinho, e as portas abririam em todo `docker compose up`.
+
+No DBeaver, com o arquivo dev no ar, use `127.0.0.1`, a porta `3306`, o usuário e
+a senha do `.env`, e ligue `allowPublicKeyRetrieval=true`.
 
 ### Banco de dados
 
@@ -257,7 +278,7 @@ salvar o resultado de hoje ou de ontem, para quem joga perto da meia-noite.
 
 ```bash
 npm test                 # unidade e ataques, sem banco
-npm run test:integracao  # precisa do MySQL do docker compose no ar
+npm run test:integracao  # precisa do MySQL no ar com o docker-compose.dev.yml
 ```
 
 Os dois rodam no GitHub Actions a cada publicação.

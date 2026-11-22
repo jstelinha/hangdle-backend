@@ -15,9 +15,10 @@ lado desta.
 ```bash
 npm run typecheck        # tipos
 npm test                 # testes de unidade e de ataques, sem banco
-npm run test:integracao  # testes com o MySQL do docker compose no ar
+npm run test:integracao  # testes com o MySQL no ar pelo docker-compose.dev.yml
 npm run build            # compila para dist/
 docker compose up -d --build && docker compose restart nginx
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # abre 3000 e 3306 em 127.0.0.1
 ```
 
 Rode `typecheck`, `test` e `test:integracao` antes de qualquer commit.
