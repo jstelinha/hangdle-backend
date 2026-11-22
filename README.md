@@ -41,7 +41,7 @@ Para ver todas as marcações de uma vez, busque pelo texto `Rubrica de`:
 | **Back-end · Edição de Usuário** · rota autenticada, só o próprio usuário, todos os campos obrigatórios, validação de CPF e de nível de senha, e-mail sem alteração | `src/rotas/perfil.ts`, `src/servicos/ServicoPerfil.ts`, `src/esquemas/usuario.ts` (`esquemaEdicao`), `src/dominio/Usuario.ts` (`editado` mantém o e-mail) | `testes/unidade/perfil.test.ts`, `testes/integracao/repositorioUsuariosMysql.test.ts` |
 | **Back-end · Configuração de Agentes** · `AGENTS.md`, 3 skills, guardrails e proteção do `.env` | `AGENTS.md` (regras e limites do agente); skills em `.claude/skills/` (`nova-tabela-sql`, `nova-rota-da-api`, `conferir-rubrica`); `.claude/settings.json` bloqueia ler ou editar o `.env` (também pelo PowerShell: `Get-Content`, `cat`, `type`), mostrar as variáveis com `printenv`, `docker compose config`, `docker inspect` ou `docker exec` com `env`/`printenv` (no Bash e no PowerShell), apagar o banco, `push --force` e `reset --hard`, e pede confirmação para `git push` | — |
 | **Tech Forge · Tratamento de Exceções** | Erros próprios em `src/erros/ErroAplicacao.ts` (validação, credenciais, proibido, não encontrado, conflito, indisponível), traduzidos em `src/middlewares/tratarErros.ts`; pastas por papel: `dominio/`, `servicos/`, `repositorios/`, `rotas/`, `esquemas/`, `middlewares/` e `erros/` | `testes/unidade/perfil.test.ts`, `testes/unidade/invasao.test.ts` |
-| **Tech Forge · Aderência aos Princípios SOLID** | **S:** a rota só valida e responde (`src/rotas/`), a regra fica no serviço (`src/servicos/`) e o SQL no repositório (`src/repositorios/`). **O:** um CRUD novo herda de `src/servicos/ServicoComDono.ts` e `src/repositorios/RepositorioMysql.ts` sem mudar as duas; a partida na sala entrou herdando de `src/dominio/Partida.ts` sem mudar a partida diária. **L:** `PartidaDiaria` e `PartidaNaSala` mantêm o contrato de `Partida`; `Senha` e `SenhaDaSala` conferem o hash como `SenhaCriptografada`; os repositórios em memória (`testes/apoio/`) entram no lugar dos do MySQL sem o serviço perceber. **D:** os serviços dependem das interfaces dos repositórios, e quem escolhe a implementação é `src/server.ts` (MySQL) ou `testes/apoio/criarAppTeste.ts` (memória) | Os testes de unidade rodam os serviços com os repositórios em memória; `testes/integracao/repositorio*Mysql.test.ts` provam os do MySQL; `testes/unidade/partidaDiaria.test.ts` e `testes/unidade/regrasDaSala.test.ts` |
+| **Tech Forge · Aderência aos Princípios SOLID** | **S:** a rota só valida e responde (`src/rotas/`), a regra fica no serviço (`src/servicos/`) e o SQL no repositório (`src/repositorios/`). **O:** um CRUD novo herda de `src/servicos/ServicoComDono.ts` e `src/repositorios/RepositorioMysql.ts` sem mudar as duas; a partida na sala entrou herdando de `src/dominio/Partida.ts` sem mudar a partida diária. **L:** `PartidaDiaria`, `ForcaDoDia` e `PartidaNaSala` mantêm o contrato de `Partida`; `Senha` e `SenhaDaSala` conferem o hash como `SenhaCriptografada`; os repositórios em memória (`testes/apoio/`) entram no lugar dos do MySQL sem o serviço perceber. **D:** os serviços dependem das interfaces dos repositórios, e quem escolhe a implementação é `src/server.ts` (MySQL) ou `testes/apoio/criarAppTeste.ts` (memória) | Os testes de unidade rodam os serviços com os repositórios em memória; `testes/integracao/repositorio*Mysql.test.ts` provam os do MySQL; `testes/unidade/partidaDiaria.test.ts` e `testes/unidade/regrasDaSala.test.ts` |
 | **Back-end · Cruds Completos** · 4 CRUDs completos (sem contar o de usuários), todos com as rotas autenticadas | Listas (`src/rotas/listas.ts`), palavras das listas (`src/rotas/palavrasDasListas.ts`), salas (`src/rotas/salas.ts`) e participantes (`src/rotas/participantes.ts`) | `testes/unidade/listas.test.ts`, `testes/unidade/palavrasDasListas.test.ts`, `testes/unidade/salas.test.ts`, `testes/unidade/participantes.test.ts` |
 | **Back-end · Cruds Completos** · paginação das listagens | `src/esquemas/paginacao.ts` (`?pagina=` e `?porPagina=`), `src/repositorios/RepositorioMysql.ts` (`listarPagina`, usado pelos 4 CRUDs) | `testes/unidade/paginacao.test.ts`, `testes/integracao/repositorioListasMysql.test.ts`, `testes/integracao/repositorioSalasMysql.test.ts` |
 | **Back-end · Cruds Completos** · não editar/deletar recursos que não existem | `src/servicos/ServicoComDono.ts` (`encontrarDoDono` dá `404` antes de editar ou apagar, nos 4 CRUDs) | os testes de `404` em `testes/unidade/listas.test.ts`, `palavrasDasListas.test.ts`, `salas.test.ts` e `participantes.test.ts` |
@@ -156,7 +156,8 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `GET` | `/usuarios/:id` | Com login, só a própria conta. Devolve `id`, `nome`, `email` e `cpf`, para o formulário de edição. |
 | `PUT` | `/usuarios/:id` | Com login, só a própria conta. Edita `nome`, `cpf` e `senha`, todos obrigatórios. Mandar `email` dá `400`, porque o e-mail não pode ser trocado. |
 | `GET` | `/saude` | Diz se a API e o banco estão no ar. |
-| `GET` | `/palavra-do-dia` | A palavra do dia, igual para todo mundo: `dia`, `palavra` e `categoria`. |
+| `GET` | `/palavra-do-dia` | Começa a partida do dia, igual para todo mundo, sem a palavra: `dia`, `categoria`, `casas` (todas `null`, menos espaço e hífen), `letras`, `erros`, `acertou`, `terminou`, `palavra` (`null`) e `token`. |
+| `POST` | `/palavra-do-dia/letras` | Sem login. Chuta uma letra: `token` (o da última resposta) e `letra`. Devolve o mesmo formato do `GET`, com as casas abertas e um token novo; a `palavra` só vem quando `terminou` é `true`. Recusa o token mexido (`400`), a letra repetida e a de depois do fim (`409`). |
 | `GET` | `/palavra-do-dia/estatisticas` | Como todo mundo foi no dia: quantos jogaram, quantos não acertaram e quantos acertaram com cada número de letras. Aceita `?dia=AAAA-MM-DD`. |
 | `POST` | `/resultados` | Com login. Salva o resultado do dia: `dia` e `letras` (os chutes, na ordem). Devolve `201` com o resultado calculado. |
 | `GET` | `/resultados` | Com login. O histórico de quem está logado, do mais novo para o mais antigo. Aceita `?dia=AAAA-MM-DD`. |
@@ -275,6 +276,24 @@ O dia vale pelo horário de Brasília e troca à meia-noite. No primeiro pedido 
 dia, a API sorteia uma palavra que nunca saiu; quando todas já saíram, volta a
 que saiu há mais tempo. O sorteio fica guardado em `palavras_do_dia`, então quem
 abrir o jogo no mesmo dia recebe a mesma palavra.
+
+A palavra não sai da API antes do fim. O `GET /palavra-do-dia` manda só a
+categoria e as casas fechadas, e cada letra vai para o `POST
+/palavra-do-dia/letras`, que devolve as casas abertas e, só quando a partida
+acaba, a palavra (`src/dominio/ForcaDoDia.ts`).
+
+A API não guarda a partida de quem joga sem conta. As letras de antes vão num
+token assinado com HMAC-SHA256 (`src/servicos/TokenDoJogo.ts`), que o front manda
+de volta com cada letra. Quem mexe nas letras do token, para apagar um erro, por
+exemplo, quebra a assinatura e recebe `400`. A chave do token sai do segredo do
+JWT, mas não é a mesma: o token do jogo não serve como login, nem o contrário.
+
+O token não impede tudo. Quem guarda um token antigo, ou pede um novo no `GET`,
+consegue testar uma letra sem gastar uma vida da partida que está jogando. Sem
+guardar a partida de cada visitante no servidor, isso não tem como ser fechado, e
+mesmo guardando, basta abrir outra janela. O que vale de verdade é protegido: o
+resultado salvo na conta e nas estatísticas é refeito pela API com as letras
+(`POST /resultados`), e o primeiro resultado do dia fica.
 
 ### Resultados do dia
 

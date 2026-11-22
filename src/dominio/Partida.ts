@@ -13,8 +13,8 @@ function letraBase(caractere: string): string {
   return caractere.normalize("NFD").replace(/\p{M}/gu, "").toUpperCase();
 }
 
-// Rubrica de Tech Forge - Modelagem do Domínio e Pilares da POO - Classe abstrata com a regra da forca, comum à partida diária e à partida na sala
-// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Substituição de Liskov: a partida diária e a da sala só acrescentam, e mantêm chutarLetra, erros, acertou e casas como aqui
+// Rubrica de Tech Forge - Modelagem do Domínio e Pilares da POO - Classe abstrata com a regra da forca, comum à partida diária (a que é salva e a jogada letra por letra) e à partida na sala
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Substituição de Liskov: a partida diária, a forca do dia e a da sala só acrescentam, e mantêm chutarLetra, erros, acertou e casas como aqui
 export abstract class Partida {
   readonly #palavra: string;
   readonly #daPalavra: ReadonlySet<string>;

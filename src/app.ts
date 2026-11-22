@@ -34,6 +34,7 @@ import { ServicoPartidaNaSala } from "./servicos/ServicoPartidaNaSala.js";
 import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
 import { ServicoResultados } from "./servicos/ServicoResultados.js";
 import { ServicoSalas } from "./servicos/ServicoSalas.js";
+import { TokenDoJogo } from "./servicos/TokenDoJogo.js";
 
 // Rubrica de Tech Forge - Aderência aos Princípios SOLID - Inversão de dependência: os serviços recebem os repositórios pela interface; o server.ts passa os do MySQL, e os testes, os em memória
 export type DependenciasApp = {
@@ -77,7 +78,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasPerfil(new ServicoPerfil(usuarios), login));
   app.use(rotasAutenticacao(new ServicoAutenticacao(usuarios, dependencias.token), limiteLogin));
   app.use(rotasEstatisticas(servicoResultados));
-  app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora)));
+  app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora, new TokenDoJogo(dependencias.token.segredo))));
   app.use(rotasResultados(servicoResultados, login));
   app.use(rotasListas(servicoListas, login));
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
