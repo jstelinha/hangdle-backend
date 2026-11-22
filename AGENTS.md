@@ -52,8 +52,11 @@ Rode `typecheck`, `test` e `test:integracao` antes de qualquer commit.
 O que o agente **não pode** fazer, travado também em `.claude/settings.json`:
 
 1. **Ler, editar ou mostrar o `.env`.** Ele tem as senhas do banco e o segredo do
-   JWT. Para saber quais variáveis existem, use o `.env.example`. Nunca escreva
-   valores de senha ou token em código, testes, logs, commits ou respostas.
+   JWT. Para saber quais variáveis existem, use o `.env.example` (pela ferramenta
+   de leitura: no PowerShell, o `Get-Content` de qualquer arquivo `.env*` é
+   bloqueado). As variáveis também estão dentro dos containers: nada de
+   `docker exec … env`, `printenv` ou `docker inspect`. Nunca escreva valores de
+   senha ou token em código, testes, logs, commits ou respostas.
 2. **Apagar dados:** nada de `docker compose down -v`, `DROP`, `TRUNCATE` ou
    `DELETE` sem `WHERE` fora de transação de teste.
 3. **Reescrever o histórico:** nada de `git push --force` ou `git reset --hard`.
