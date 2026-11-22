@@ -1,12 +1,13 @@
 import type { Pagina } from "../dominio/Pagina.js";
 import { apelidoDoNome } from "../dominio/Participante.js";
-import type { Sala } from "../dominio/Sala.js";
+import { SALA_NAO_ENCONTRADA, type Sala } from "../dominio/Sala.js";
 import { SenhaDaSala } from "../dominio/SenhaDaSala.js";
 import { ErroConflito, ErroNaoEncontrado, ErroProibido, type ErroAplicacao } from "../erros/ErroAplicacao.js";
 import type { DadosEdicaoSala, DadosNovaSala, FiltroSalas } from "../esquemas/sala.js";
 import type { RepositorioParticipantes } from "../repositorios/RepositorioParticipantes.js";
 import type { RepositorioSalas } from "../repositorios/RepositorioSalas.js";
 import type { RepositorioUsuarios } from "../repositorios/RepositorioUsuarios.js";
+import type { AndamentoDaPartida } from "./AndamentoDaPartida.js";
 import { ServicoComDono } from "./ServicoComDono.js";
 import type { ServicoListas } from "./ServicoListas.js";
 
@@ -15,31 +16,47 @@ const PEDE_SENHA = "Esta sala tem senha. Digite a senha para entrar.";
 const SENHA_ERRADA = "Senha da sala incorreta.";
 
 export class ServicoSalas extends ServicoComDono<Sala> {
-  protected override readonly naoEncontrado = "Sala não encontrada.";
+  protected override readonly naoEncontrado = SALA_NAO_ENCONTRADA;
   readonly #salas: RepositorioSalas;
   readonly #participantes: RepositorioParticipantes;
   readonly #listas: ServicoListas;
   readonly #usuarios: RepositorioUsuarios;
+  readonly #andamento: AndamentoDaPartida;
 
-  constructor(salas: RepositorioSalas, participantes: RepositorioParticipantes, listas: ServicoListas, usuarios: RepositorioUsuarios) {
+  constructor(
+    salas: RepositorioSalas,
+    participantes: RepositorioParticipantes,
+    listas: ServicoListas,
+    usuarios: RepositorioUsuarios,
+    andamento: AndamentoDaPartida,
+  ) {
     super();
     this.#salas = salas;
     this.#participantes = participantes;
     this.#listas = listas;
     this.#usuarios = usuarios;
+    this.#andamento = andamento;
   }
 
-  listar(usuarioId: number, { filtro, ...pedido }: FiltroSalas): Promise<Pagina<Sala>> {
-    return filtro === "minhas" ? this.#salas.listar(usuarioId, pedido) : this.#salas.listarAbertas(pedido);
+  // A partida das salas jogando anda antes de elas aparecerem. Se alguma acabou, a página vem de novo:
+  // nas abertas, a sala encerrada sai e outra entra no lugar. Cada volta encerra de vez alguma sala, então isto para.
+  async listar(usuarioId: number, { filtro, ...pedido }: FiltroSalas): Promise<Pagina<Sala>> {
+    const buscarPagina = () => (filtro === "minhas" ? this.#salas.listar(usuarioId, pedido) : this.#salas.listarAbertas(pedido));
+    let pagina = await buscarPagina();
+    while (await this.#algumaAcabou(pagina.itens)) {
+      pagina = await buscarPagina();
+    }
+    return pagina;
   }
 
   // Qualquer pessoa com login vê os dados da sala, para decidir se entra: a senha nunca sai daqui.
   async buscar(id: number): Promise<Sala> {
     const sala = await this.#salas.buscar(id);
-    if (!sala) {
+    const emDia = sala && (await this.#emDia(sala));
+    if (!emDia) {
       throw new ErroNaoEncontrado(this.naoEncontrado);
     }
-    return sala;
+    return emDia;
   }
 
   async criar(usuarioId: number, { senha, ...configuracao }: DadosNovaSala): Promise<Sala> {
@@ -97,6 +114,19 @@ export class ServicoSalas extends ServicoComDono<Sala> {
 
   protected override erroDeOutroDono(): ErroAplicacao {
     return new ErroProibido("Só quem criou a sala pode mudar ou apagar a sala.");
+  }
+
+  // A sala jogando pode ter ficado parada no tempo, se ninguém está na tela da partida. Null: foi apagada nesse meio-tempo.
+  async #emDia(sala: Sala): Promise<Sala | null> {
+    return sala.situacao === "jogando" ? ((await this.#andamento.avancar(sala.id))?.sala ?? null) : sala;
+  }
+
+  async #algumaAcabou(salas: readonly Sala[]): Promise<boolean> {
+    let acabou = false;
+    for (const sala of salas) {
+      acabou = (await this.#emDia(sala))?.situacao !== sala.situacao || acabou;
+    }
+    return acabou;
   }
 
   async #conferirLista(usuarioId: number, listaId: number | null): Promise<void> {

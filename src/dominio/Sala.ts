@@ -5,6 +5,8 @@ export type SegundosPorRodada = (typeof SEGUNDOS_POR_RODADA)[number];
 export const SITUACOES_DA_SALA = ["esperando", "jogando", "encerrada"] as const;
 export type SituacaoDaSala = (typeof SITUACOES_DA_SALA)[number];
 
+export const SALA_NAO_ENCONTRADA = "Sala não encontrada.";
+
 export const RODADAS = { minimo: 1, maximo: 5 } as const;
 export const JOGADORES = { minimo: 2, maximo: 10 } as const;
 

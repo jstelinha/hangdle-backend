@@ -23,6 +23,7 @@ import { rotasResultados } from "./rotas/resultados.js";
 import { rotasSalas } from "./rotas/salas.js";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasUsuarios } from "./rotas/usuarios.js";
+import { AndamentoDaPartida } from "./servicos/AndamentoDaPartida.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
 import { ServicoCadastro } from "./servicos/ServicoCadastro.js";
 import { ServicoListas } from "./servicos/ServicoListas.js";
@@ -60,7 +61,10 @@ export function criarApp(dependencias: DependenciasApp): Express {
   const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
   const servicoListas = new ServicoListas(listas);
-  const servicoSalas = new ServicoSalas(salas, participantes, servicoListas, usuarios);
+  // A partida anda num lugar só, que fala direto com os repositórios: salas, participantes e partida usam o mesmo
+  // andamento, e nenhum desses serviços depende do outro para isso.
+  const andamento = new AndamentoDaPartida(salas, participantes, vezes, agora);
+  const servicoSalas = new ServicoSalas(salas, participantes, servicoListas, usuarios, andamento);
 
   app.disable("x-powered-by");
   // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
@@ -78,8 +82,8 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasListas(servicoListas, login));
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
   app.use(rotasSalas(servicoSalas, login));
-  app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas), login, limiteEntradaNaSala));
-  app.use(rotasPartidaNaSala(new ServicoPartidaNaSala(servicoSalas, participantes, vezes, agora), login));
+  app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas, andamento), login, limiteEntradaNaSala));
+  app.use(rotasPartidaNaSala(new ServicoPartidaNaSala(andamento, vezes, agora), login));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);

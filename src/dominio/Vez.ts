@@ -55,17 +55,18 @@ export function segundosRestantes(prazo: Date | null, agora: Date): number {
 
 // Em cada rodada, cada jogador escolhe uma palavra, na ordem em que entrou na sala (a ordem do id).
 // Quem chega no meio entra no fim da fila; quem sai é pulado. Sem próxima vez, a partida acabou.
-export function proximaVez(anterior: RegistroVez | null, jogadores: readonly number[], rodadas: number, agora: Date): NovaVez | null {
+// A vez começa 5 segundos depois do fim da anterior, mas nunca antes de naoAntesDe.
+export function proximaVez(anterior: RegistroVez | null, jogadores: readonly number[], rodadas: number, naoAntesDe: Date): NovaVez | null {
   const ordem = [...jogadores].sort((a, b) => a - b);
   const primeiro = ordem[0];
   if (primeiro === undefined) {
     return null;
   }
   if (!anterior) {
-    return { numero: 1, rodada: 1, escolhedorId: primeiro, comecaEm: agora };
+    return { numero: 1, rodada: 1, escolhedorId: primeiro, comecaEm: naoAntesDe };
   }
-  const depoisDoIntervalo = somarSegundos(anterior.terminouEm ?? agora, SEGUNDOS_ENTRE_AS_VEZES);
-  const comecaEm = depoisDoIntervalo > agora ? depoisDoIntervalo : agora;
+  const depoisDoIntervalo = somarSegundos(anterior.terminouEm ?? naoAntesDe, SEGUNDOS_ENTRE_AS_VEZES);
+  const comecaEm = depoisDoIntervalo > naoAntesDe ? depoisDoIntervalo : naoAntesDe;
   const numero = anterior.numero + 1;
   const seguinte = ordem.find((id) => id > anterior.escolhedorId);
   if (seguinte !== undefined) {

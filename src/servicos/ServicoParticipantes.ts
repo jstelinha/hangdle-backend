@@ -4,6 +4,7 @@ import type { Sala } from "../dominio/Sala.js";
 import { ErroConflito, ErroNaoEncontrado, ErroProibido, type ErroAplicacao } from "../erros/ErroAplicacao.js";
 import type { DadosEdicaoParticipante, DadosEntrada } from "../esquemas/participante.js";
 import { erroJaEstaNaSala, erroSalaCheia, type RepositorioParticipantes } from "../repositorios/RepositorioParticipantes.js";
+import type { AndamentoDaPartida } from "./AndamentoDaPartida.js";
 import { ServicoComDono } from "./ServicoComDono.js";
 import type { ServicoSalas } from "./ServicoSalas.js";
 
@@ -11,11 +12,13 @@ export class ServicoParticipantes extends ServicoComDono<Participante> {
   protected override readonly naoEncontrado = "Jogador não encontrado nesta sala.";
   readonly #participantes: RepositorioParticipantes;
   readonly #salas: ServicoSalas;
+  readonly #andamento: AndamentoDaPartida;
 
-  constructor(participantes: RepositorioParticipantes, salas: ServicoSalas) {
+  constructor(participantes: RepositorioParticipantes, salas: ServicoSalas, andamento: AndamentoDaPartida) {
     super();
     this.#participantes = participantes;
     this.#salas = salas;
+    this.#andamento = andamento;
   }
 
   async listar(usuarioId: number, salaId: number, pedido: PedidoDePagina): Promise<Pagina<Participante>> {
@@ -53,6 +56,7 @@ export class ServicoParticipantes extends ServicoComDono<Participante> {
 
   // Cada um sai quando quer; quem criou a sala também pode tirar alguém, mas não sai: apaga a sala.
   // Depois do fim, ninguém sai: o ON DELETE CASCADE levaria junto as vezes da pessoa e mudaria o placar final.
+  // A sala vem com a partida em dia, então a sala que acabou sem ninguém olhando também já conta como encerrada.
   async sair(usuarioId: number, salaId: number, id: number): Promise<void> {
     const sala = await this.#conferirQueEstaNaSala(usuarioId, salaId);
     const participante = await this.encontrarDoDono(salaId, id);
@@ -66,6 +70,8 @@ export class ServicoParticipantes extends ServicoComDono<Participante> {
       throw new ErroConflito("Essa sala já foi encerrada. Ninguém sai nem é tirado, para o placar final ficar completo.");
     }
     await this.#participantes.apagar(id);
+    // Se quem saiu estava na vez, a vez passa para o próximo; se ficou só uma pessoa, a partida acaba.
+    await this.#andamento.avancar(salaId);
   }
 
   protected override buscarPorId(id: number): Promise<Participante | null> {

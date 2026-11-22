@@ -2,6 +2,7 @@ import type { Express } from "express";
 import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { BRUNA, criarAppTeste, LARISSA } from "../apoio/criarAppTeste.js";
+import type { RepositorioSalasMemoria } from "../apoio/RepositorioSalasMemoria.js";
 import { comLogin, entrar } from "../apoio/sessao.js";
 
 const CARLA = { ...LARISSA, nome: "Carla Dias", email: "carla@exemplo.com", cpf: "390.533.447-05" };
@@ -15,12 +16,13 @@ function passar(segundos: number): void {
 }
 
 let app: Express;
+let salas: RepositorioSalasMemoria;
 let larissa: string;
 let bruna: string;
 let carla: string;
 
 beforeAll(async () => {
-  app = criarAppTeste({ agora: () => relogio.agora }).app;
+  ({ app, salas } = criarAppTeste({ agora: () => relogio.agora }));
   larissa = (await entrar(app)).token;
   bruna = (await entrar(app, BRUNA)).token;
   carla = (await entrar(app, CARLA)).token;
@@ -40,6 +42,15 @@ function escolher(token: string, salaId: number, corpo: object) {
 
 function chutar(token: string, salaId: number, letra: string) {
   return request(app).post(`/salas/${salaId}/partida/letras`).set(comLogin(token)).send({ letra });
+}
+
+function abrirSala(token: string, salaId: number) {
+  return request(app).get(`/salas/${salaId}`).set(comLogin(token));
+}
+
+async function idsDasAbertas(token: string): Promise<number[]> {
+  const resposta = await request(app).get("/salas?filtro=abertas&porPagina=50").set(comLogin(token));
+  return resposta.body.itens.map((sala: { id: number }) => sala.id);
 }
 
 async function chutarTodas(token: string, salaId: number, letras: string): Promise<void> {
@@ -325,5 +336,60 @@ describe("andamento da partida", () => {
     await request(app).delete(`/salas/${salaId}/participantes/${daBruna.body.eu}`).set(comLogin(bruna));
 
     expect((await partida(larissa, salaId)).body).toMatchObject({ situacao: "encerrada", vez: null });
+  });
+});
+
+// Ninguém está na tela da partida: a sala anda quando alguém lista, abre ou sai dela.
+describe("sala sem ninguém na tela da partida", () => {
+  // Com 2 jogadores e 1 rodada, sem ninguém escolher nem chutar: duas vezes de 20 + 90 segundos, com 5 entre elas.
+  const PARTIDA_INTEIRA = 20 + 90 + 5 + 20 + 90;
+
+  it("a partida que já passou do tempo aparece encerrada e sai das abertas ao listar", async () => {
+    const salaId = await criarSala();
+    await comecar(larissa, salaId);
+    const antes = await idsDasAbertas(carla);
+    passar(PARTIDA_INTEIRA);
+
+    const depois = await idsDasAbertas(carla);
+    const minhas = await request(app).get("/salas?filtro=minhas&porPagina=50").set(comLogin(bruna));
+
+    expect(antes).toContain(salaId);
+    expect(depois).not.toContain(salaId);
+    expect(minhas.body.itens.find((sala: { id: number }) => sala.id === salaId).situacao).toBe("encerrada");
+  });
+
+  it("a partida que já passou do tempo aparece encerrada ao abrir a sala, com o placar final", async () => {
+    const salaId = await criarSala();
+    await comecar(larissa, salaId);
+    passar(PARTIDA_INTEIRA);
+
+    const sala = await abrirSala(carla, salaId);
+    const fim = await partida(larissa, salaId);
+
+    expect(sala.body.situacao).toBe("encerrada");
+    expect(fim.body).toMatchObject({ situacao: "encerrada", vez: null, anterior: { numero: 2, escolhedor: { apelido: "Bru" } } });
+  });
+
+  it("chega até onde a partida estaria, contando cada fase do fim da anterior, e não de quando alguém abriu", async () => {
+    const salaId = await criarSala();
+    await comecar(larissa, salaId);
+    passar(20 + 90 + 5 + 3);
+
+    const sala = await abrirSala(carla, salaId);
+    const estado = await partida(bruna, salaId);
+
+    expect(sala.body.situacao).toBe("jogando");
+    expect(estado.body.vez).toMatchObject({ numero: 2, fase: "escolhendo", segundosRestantes: 17, escolhedor: { apelido: "Bru" } });
+  });
+
+  it("quando um jogador sai, a partida anda na hora: com uma pessoa só, a sala já fica encerrada", async () => {
+    const salaId = await salaComPalavra();
+    const daBruna = await partida(bruna, salaId);
+
+    const saida = await request(app).delete(`/salas/${salaId}/participantes/${daBruna.body.eu}`).set(comLogin(bruna));
+
+    expect(saida.status).toBe(204);
+    // Direto no repositório, sem passar por nenhuma rota que faria a partida andar.
+    expect((await salas.buscar(salaId))?.situacao).toBe("encerrada");
   });
 });

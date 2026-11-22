@@ -254,12 +254,20 @@ A palavra fica só na API: quem adivinha recebe as casas abertas da própria
 forca e, dos outros, só os erros e quantas casas já abriram. A API confere cada
 letra (`src/dominio/PartidaNaSala.ts`).
 
-A partida não tem relógio no servidor. Cada pergunta à sala faz a partida andar
-até o momento atual (`src/servicos/ServicoPartidaNaSala.ts`), e o banco aceita
+A partida não tem relógio no servidor. Ela anda até o momento atual sempre que
+alguém pergunta pela sala: ao jogar, ao abrir a sala, ao listar as salas e quando
+um jogador sai (`src/servicos/AndamentoDaPartida.ts`). Assim, a sala em que
+ninguém está na tela da partida não fica presa em `jogando`: quando alguém a lista
+ou abre, ela chega até onde a partida estaria, com cada fase contada do fim da
+anterior, e a que já acabou aparece `encerrada` e sai das abertas. O banco aceita
 cada mudança só uma vez, para dois jogadores que perguntem juntos não criarem a
 mesma vez nem somarem os pontos duas vezes. Quem chega no meio entra no fim da
 fila. Se quem está na vez sai, a vez passa para o próximo; se fica só uma pessoa
 na sala, a partida acaba.
+
+O `AndamentoDaPartida` fala só com os repositórios. As salas, os participantes e
+a partida usam o mesmo andamento, então o `ServicoSalas` faz a partida andar sem
+depender do `ServicoPartidaNaSala`, que já dependia dele.
 
 ### Palavra do dia
 
