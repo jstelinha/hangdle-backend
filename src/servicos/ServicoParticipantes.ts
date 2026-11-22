@@ -1,5 +1,6 @@
 import type { Pagina, PedidoDePagina } from "../dominio/Pagina.js";
 import type { Participante } from "../dominio/Participante.js";
+import type { Sala } from "../dominio/Sala.js";
 import { ErroConflito, ErroNaoEncontrado, ErroProibido, type ErroAplicacao } from "../erros/ErroAplicacao.js";
 import type { DadosEdicaoParticipante, DadosEntrada } from "../esquemas/participante.js";
 import { erroJaEstaNaSala, erroSalaCheia, type RepositorioParticipantes } from "../repositorios/RepositorioParticipantes.js";
@@ -51,14 +52,18 @@ export class ServicoParticipantes extends ServicoComDono<Participante> {
   }
 
   // Cada um sai quando quer; quem criou a sala também pode tirar alguém, mas não sai: apaga a sala.
+  // Depois do fim, ninguém sai: o ON DELETE CASCADE levaria junto as vezes da pessoa e mudaria o placar final.
   async sair(usuarioId: number, salaId: number, id: number): Promise<void> {
-    const participante = await this.#encontrarNaSala(usuarioId, salaId, id);
+    const sala = await this.#conferirQueEstaNaSala(usuarioId, salaId);
+    const participante = await this.encontrarDoDono(salaId, id);
     if (participante.dono) {
       throw new ErroConflito("Quem criou a sala não sai dela. Para acabar com a sala, apague a sala.");
     }
-    const sala = await this.#salas.buscar(salaId);
     if (participante.usuarioId !== usuarioId && sala.donoId !== usuarioId) {
       throw new ErroProibido("Só quem criou a sala pode tirar outra pessoa.");
+    }
+    if (sala.situacao === "encerrada") {
+      throw new ErroConflito("Essa sala já foi encerrada. Ninguém sai nem é tirado, para o placar final ficar completo.");
     }
     await this.#participantes.apagar(id);
   }
@@ -75,11 +80,12 @@ export class ServicoParticipantes extends ServicoComDono<Participante> {
     return new ErroNaoEncontrado(this.naoEncontrado);
   }
 
-  async #conferirQueEstaNaSala(usuarioId: number, salaId: number): Promise<void> {
-    await this.#salas.buscar(salaId);
+  async #conferirQueEstaNaSala(usuarioId: number, salaId: number): Promise<Sala> {
+    const sala = await this.#salas.buscar(salaId);
     if (!(await this.#participantes.buscarNaSala(salaId, usuarioId))) {
       throw new ErroProibido("Entre na sala para ver quem está nela.");
     }
+    return sala;
   }
 
   async #encontrarNaSala(usuarioId: number, salaId: number, id: number): Promise<Participante> {

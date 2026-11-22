@@ -224,7 +224,9 @@ A senha da sala é guardada com bcrypt, como a da conta (as duas herdam de
 vezes bloqueia a entrada por 15 minutos, do mesmo jeito que o login.
 
 A sala recusa com `409` quem já está nela, o apelido repetido, a sala cheia e a
-sala encerrada. O próprio banco também recusa a sala cheia, com um gatilho em
+sala encerrada. Na sala encerrada, também ninguém sai nem é tirado: apagar o
+participante levaria junto, pelo `ON DELETE CASCADE`, as vezes dele, e o placar
+final mudaria. O próprio banco também recusa a sala cheia, com um gatilho em
 `mysql/07-salas.sql`, para dois jogadores que cheguem ao mesmo tempo não passarem
 do máximo.
 

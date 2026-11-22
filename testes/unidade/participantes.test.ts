@@ -244,6 +244,24 @@ describe("GET, PUT e DELETE /salas/:salaId/participantes/:id", () => {
     expect(donaTiraCarla.status).toBe(204);
   });
 
+  it("depois que a sala encerra, ninguém sai nem é tirado, para o placar final não mudar", async () => {
+    const { app, larissa, bruna, carla, salaId, salas } = await appComSala();
+    const daBruna = await entrarNaSala(app, bruna.token, salaId);
+    const daCarla = await entrarNaSala(app, carla.token, salaId, { apelido: "Carla" });
+    salas.mudarSituacao(salaId, "encerrada");
+
+    const brunaSai = await request(app).delete(`/salas/${salaId}/participantes/${daBruna.body.id}`).set(comLogin(bruna.token));
+    const donaTiraCarla = await request(app).delete(`/salas/${salaId}/participantes/${daCarla.body.id}`).set(comLogin(larissa.token));
+    const jogadores = await listarJogadores(app, larissa.token, salaId);
+
+    const mensagem = "Essa sala já foi encerrada. Ninguém sai nem é tirado, para o placar final ficar completo.";
+    expect(brunaSai.status).toBe(409);
+    expect(brunaSai.body.mensagem).toBe(mensagem);
+    expect(donaTiraCarla.status).toBe(409);
+    expect(donaTiraCarla.body.mensagem).toBe(mensagem);
+    expect(jogadores.body.total).toBe(3);
+  });
+
   it("não deixa quem criou a sala sair dela", async () => {
     const { app, larissa, salaId } = await appComSala();
     const jogadores = await listarJogadores(app, larissa.token, salaId);
