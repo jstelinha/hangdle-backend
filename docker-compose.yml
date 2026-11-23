@@ -1,6 +1,7 @@
 
 name: hangdle
 
+# Rubrica de Devops - Organização do docker-compose.yml - Um serviço por papel (banco, API, front e nginx), cada um com as suas redes; as senhas vêm do .env e os dados ficam no volume db_data
 services:
   db:
     image: mysql:8.4
@@ -11,6 +12,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+    # Rubrica de Devops - Persistência de dados no MySQL - O banco fica no volume db_data, fora do container: os dados continuam depois de parar, reiniciar ou recriar o container (só o down -v apaga)
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql:/docker-entrypoint-initdb.d:ro
@@ -26,6 +28,7 @@ services:
     build: .
     container_name: hangdle_backend
     restart: always
+    # Rubrica de Devops - Integração entre serviços - A API acha o MySQL pelo nome do serviço (db), na rede interna, e só liga depois que ele responde ao healthcheck
     environment:
       PORT: 3000
       DB_HOST: db
@@ -62,6 +65,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    # Rubrica de Devops - Integração entre serviços - O nginx leva o / para o front e o /api/ para a API (nginx.conf): é assim que o front consome o back
     depends_on:
       - frontend
       - backend
