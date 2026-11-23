@@ -12,6 +12,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      # O root só entra de dentro do próprio container, e não de qualquer máquina da rede interna.
+      MYSQL_ROOT_HOST: localhost
     # Rubrica de Devops - Persistência de dados no MySQL - O banco fica no volume db_data, fora do container: os dados continuam depois de parar, reiniciar ou recriar o container (só o down -v apaga)
     volumes:
       - db_data:/var/lib/mysql
