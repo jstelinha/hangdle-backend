@@ -1,7 +1,7 @@
 import cors from "cors";
 import express, { type Express } from "express";
 import { exigirLogin } from "./middlewares/exigirLogin.js";
-import { limitarTentativas } from "./middlewares/limitarTentativas.js";
+import { limitarTentativas, UM_MINUTO } from "./middlewares/limitarTentativas.js";
 import { rotaNaoEncontrada, tratarErros } from "./middlewares/tratarErros.js";
 import type { RepositorioListas } from "./repositorios/RepositorioListas.js";
 import type { RepositorioPalavrasDasListas } from "./repositorios/RepositorioPalavrasDasListas.js";
@@ -51,13 +51,19 @@ export type DependenciasApp = {
   token: ConfiguracaoToken;
   corsOrigens: string[];
   tentativasPorJanela: number;
+  // Pedidos por minuto, por IP, nas rotas abertas da palavra do dia. Uma partida tem no máximo 26 letras.
+  jogadasPorMinuto?: number;
 };
+
+const JOGADAS_POR_MINUTO = 120;
 
 export function criarApp(dependencias: DependenciasApp): Express {
   const app = express();
   const limiteCadastro = limitarTentativas(dependencias.tentativasPorJanela);
   const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
   const limiteEntradaNaSala = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
+  // As rotas da palavra do dia não pedem login: sem limite, dava para mandar letras sem parar.
+  const limiteJogoDoDia = limitarTentativas(dependencias.jogadasPorMinuto ?? JOGADAS_POR_MINUTO, { janelaMs: UM_MINUTO });
   const login = exigirLogin(dependencias.token.segredo);
   const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
@@ -77,6 +83,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasUsuarios(new ServicoCadastro(usuarios), limiteCadastro));
   app.use(rotasPerfil(new ServicoPerfil(usuarios), login));
   app.use(rotasAutenticacao(new ServicoAutenticacao(usuarios, dependencias.token), limiteLogin));
+  app.use("/palavra-do-dia", limiteJogoDoDia);
   app.use(rotasEstatisticas(servicoResultados));
   app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora, new TokenDoJogo(dependencias.token.segredo))));
   app.use(rotasResultados(servicoResultados, login));

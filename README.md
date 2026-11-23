@@ -199,7 +199,9 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
-IP que ela conta as tentativas de cadastro e login.
+IP que ela conta as tentativas de cadastro e login. As rotas abertas da palavra do
+dia (`/palavra-do-dia`, `/palavra-do-dia/letras` e `/palavra-do-dia/estatisticas`)
+aceitam até 120 pedidos por minuto de cada IP; depois disso, a resposta é `429`.
 
 As rotas com login pedem o token do `/login` no cabeçalho
 `Authorization: Bearer <token>`. Sem token, com token inválido ou vencido, a

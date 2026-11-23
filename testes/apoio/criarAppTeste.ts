@@ -31,12 +31,14 @@ export const PALAVRAS_TESTE: PalavraCadastrada[] = [
 
 type OpcoesAppTeste = {
   tentativasPorJanela?: number;
+  jogadasPorMinuto?: number;
   agora?: () => Date;
   palavras?: PalavraCadastrada[];
 };
 
 export function criarAppTeste({
   tentativasPorJanela = 1000,
+  jogadasPorMinuto = 1000,
   agora = () => new Date("2026-11-03T12:00:00-03:00"),
   palavras = PALAVRAS_TESTE,
 }: OpcoesAppTeste = {}) {
@@ -59,6 +61,7 @@ export function criarAppTeste({
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },
     corsOrigens: ["http://localhost"],
     tentativasPorJanela,
+    jogadasPorMinuto,
   });
   return { app, usuarios, salas };
 }
