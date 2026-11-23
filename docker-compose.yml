@@ -28,6 +28,8 @@ services:
     build: .
     container_name: hangdle_backend
     restart: always
+    # Um init na frente do node, que repassa o SIGTERM do docker stop para a API (ver o fim do Dockerfile).
+    init: true
     # Rubrica de Devops - Integração entre serviços - A API acha o MySQL pelo nome do serviço (db), na rede interna, e só liga depois que ele responde ao healthcheck
     environment:
       PORT: 3000

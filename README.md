@@ -79,7 +79,10 @@ nginx. Cada linha tem a marcação `# Rubrica de Devops` no arquivo citado.
   `src/servicos/ServicoAutenticacao.ts`, `Buffer` em `src/dominio/Senha.ts` e
   `process.env` em `src/config/ambiente.ts`.
 - **Para rodar:** `npm start` executa `node dist/server.js`. O `Dockerfile` parte
-  da imagem `node:24-alpine`.
+  da imagem `node:24-alpine`, em duas etapas: a primeira compila com o
+  TypeScript; a segunda leva só as dependências de produção e o `dist/`, e roda o
+  `node` direto. Com o `init: true` do compose, o `docker stop` chega na API, que
+  fecha o servidor e o pool do MySQL antes de sair.
 
 ## Rodar tudo com Docker
 
