@@ -4,6 +4,7 @@ import { exigirLogin } from "./middlewares/exigirLogin.js";
 import { limitarTentativas, UM_MINUTO } from "./middlewares/limitarTentativas.js";
 import { rotaNaoEncontrada, tratarErros } from "./middlewares/tratarErros.js";
 import type { RepositorioListas } from "./repositorios/RepositorioListas.js";
+import type { RepositorioListasProntas } from "./repositorios/RepositorioListasProntas.js";
 import type { RepositorioPalavrasDasListas } from "./repositorios/RepositorioPalavrasDasListas.js";
 import type { RepositorioPalavrasDoDia } from "./repositorios/RepositorioPalavrasDoDia.js";
 import type { RepositorioParticipantes } from "./repositorios/RepositorioParticipantes.js";
@@ -14,6 +15,7 @@ import type { RepositorioVezes } from "./repositorios/RepositorioVezes.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasEstatisticas } from "./rotas/estatisticas.js";
 import { rotasListas } from "./rotas/listas.js";
+import { rotasListasProntas } from "./rotas/listasProntas.js";
 import { rotasPalavrasDasListas } from "./rotas/palavrasDasListas.js";
 import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
 import { rotasPartidaNaSala } from "./rotas/partidaNaSala.js";
@@ -27,6 +29,7 @@ import { AndamentoDaPartida } from "./servicos/AndamentoDaPartida.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
 import { ServicoCadastro } from "./servicos/ServicoCadastro.js";
 import { ServicoListas } from "./servicos/ServicoListas.js";
+import { ServicoListasProntas } from "./servicos/ServicoListasProntas.js";
 import { ServicoPalavrasDasListas } from "./servicos/ServicoPalavrasDasListas.js";
 import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
 import { ServicoParticipantes } from "./servicos/ServicoParticipantes.js";
@@ -42,6 +45,7 @@ export type DependenciasApp = {
   palavrasDoDia: RepositorioPalavrasDoDia;
   resultados: RepositorioResultados;
   listas: RepositorioListas;
+  listasProntas: RepositorioListasProntas;
   palavrasDasListas: RepositorioPalavrasDasListas;
   salas: RepositorioSalas;
   participantes: RepositorioParticipantes;
@@ -65,7 +69,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   // As rotas da palavra do dia não pedem login: sem limite, dava para mandar letras sem parar.
   const limiteJogoDoDia = limitarTentativas(dependencias.jogadasPorMinuto ?? JOGADAS_POR_MINUTO, { janelaMs: UM_MINUTO });
   const login = exigirLogin(dependencias.token.segredo);
-  const { usuarios, palavrasDoDia, resultados, listas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
+  const { usuarios, palavrasDoDia, resultados, listas, listasProntas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
   const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
   const servicoListas = new ServicoListas(listas);
   // A partida anda num lugar só, que fala direto com os repositórios: salas, participantes e partida usam o mesmo
@@ -88,6 +92,7 @@ export function criarApp(dependencias: DependenciasApp): Express {
   app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora, new TokenDoJogo(dependencias.token.segredo))));
   app.use(rotasResultados(servicoResultados, login));
   app.use(rotasListas(servicoListas, login));
+  app.use(rotasListasProntas(new ServicoListasProntas(listasProntas, listas, palavrasDasListas), login));
   app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
   app.use(rotasSalas(servicoSalas, login));
   app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas, andamento), login, limiteEntradaNaSala));
