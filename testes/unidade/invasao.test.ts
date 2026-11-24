@@ -143,6 +143,31 @@ describe("ataques contra cadastro e login", () => {
     expect(segunda.status).toBe(429);
   });
 
+  it("limita as letras da palavra do dia, que não pedem login", async () => {
+    const { app } = criarAppTeste({ jogadasPorMinuto: 3 });
+    const { body: comeco } = await request(app).get("/palavra-do-dia");
+    const chutar = (letra: string) => request(app).post("/palavra-do-dia/letras").send({ letra, token: comeco.token });
+
+    const respostas = [await chutar("A"), await chutar("E")];
+    const quarta = await chutar("I");
+
+    expect(respostas.map((resposta) => resposta.status)).toEqual([200, 200]);
+    expect(quarta.status).toBe(429);
+    expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere um minuto e tente de novo." });
+  });
+
+  it("as estatísticas do dia contam no mesmo limite da palavra do dia, e o resto da API não", async () => {
+    const { app } = criarAppTeste({ jogadasPorMinuto: 1 });
+
+    const primeira = await request(app).get("/palavra-do-dia");
+    const estatisticas = await request(app).get("/palavra-do-dia/estatisticas");
+    const saude = await request(app).get("/saude");
+
+    expect(primeira.status).toBe(200);
+    expect(estatisticas.status).toBe(429);
+    expect(saude.status).toBe(200);
+  });
+
   it("só libera CORS para as origens configuradas", async () => {
     const { app } = criarAppTeste();
 

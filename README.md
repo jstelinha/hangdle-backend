@@ -104,7 +104,7 @@ O comando sobe um projeto chamado `hangdle` com quatro containers:
 | `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com os arquivos da pasta `mysql/`. |
 | `hangdle_backend` | Esta API, na porta 3000 dentro do Docker. Não tem porta fora dele: a API só é acessível pelo nginx, em `/api/`. Só liga depois que o MySQL responde. |
 | `hangdle_frontend` | O front já compilado (`npm run build`), que vem de `../hangdle-frontend` e é servido por um nginx próprio, na porta 80 dentro do Docker. Depois de mudar o front, rode o `up -d --build` de novo. |
-| `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. |
+| `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. Manda os cabeçalhos de segurança (Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` e `Permissions-Policy`) e não mostra a versão do nginx. |
 
 Todos têm `restart: always`, então voltam sozinhos quando o Docker é ligado de
 novo.
@@ -146,6 +146,7 @@ O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
 | `06-listas.sql` | As listas de palavras de cada pessoa, usadas nas salas. O nome não se repete para a mesma pessoa, e cada palavra (com uma dica opcional) não se repete na mesma lista. Apagar a lista apaga as palavras dela. |
 | `07-salas.sql` | As salas (pública ou com senha, tempo de 45, 90 ou 120 s, de 1 a 5 rodadas, de 2 a 10 jogadores) e quem está em cada uma. A mesma pessoa e o mesmo apelido não se repetem na sala, e um gatilho recusa quem chega com a sala cheia. Apagar a lista deixa a sala sem lista. |
 | `08-vezes.sql` | As vezes de cada partida na sala (quem escolhe, a palavra, a dica e as horas de começo, escolha e fim) e as letras que cada jogador chutou em cada vez. O número da vez não se repete na sala, nem a letra para o mesmo jogador na mesma vez. Se quem escolhe sai da sala, a vez dele some. |
+| `09-permissoes.sh` | Deixa o usuário da API (`DB_USER`) só com `SELECT`, `INSERT`, `UPDATE` e `DELETE`: ele não apaga tabelas nem as travas. É `.sh` porque o nome do usuário vem do `.env`. O root só entra de dentro do container (`MYSQL_ROOT_HOST: localhost`, no `docker-compose.yml`). |
 
 Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
@@ -199,7 +200,9 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 
 Pelo nginx, as rotas ganham `/api` na frente: `/api/login` chega na API como
 `/login`. A API confia só no nginx para saber o IP de quem chamou, e é por esse
-IP que ela conta as tentativas de cadastro e login.
+IP que ela conta as tentativas de cadastro e login. As rotas abertas da palavra do
+dia (`/palavra-do-dia`, `/palavra-do-dia/letras` e `/palavra-do-dia/estatisticas`)
+aceitam até 120 pedidos por minuto de cada IP; depois disso, a resposta é `429`.
 
 As rotas com login pedem o token do `/login` no cabeçalho
 `Authorization: Bearer <token>`. Sem token, com token inválido ou vencido, a
