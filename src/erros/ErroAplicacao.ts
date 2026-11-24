@@ -1,5 +1,6 @@
 export type ErrosPorCampo = Record<string, string>;
 
+// Rubrica de Tech Forge - Tratamento de Exceções e Organização do Código - Erros customizados em classes de exceção
 export abstract class ErroAplicacao extends Error {
   abstract readonly status: number;
   readonly campos: ErrosPorCampo;
@@ -19,6 +20,18 @@ export class ErroCredenciais extends ErroAplicacao {
   readonly status = 401;
 }
 
+export class ErroProibido extends ErroAplicacao {
+  readonly status = 403;
+}
+
+export class ErroNaoEncontrado extends ErroAplicacao {
+  readonly status = 404;
+}
+
 export class ErroConflito extends ErroAplicacao {
   readonly status = 409;
+}
+
+export class ErroIndisponivel extends ErroAplicacao {
+  readonly status = 503;
 }

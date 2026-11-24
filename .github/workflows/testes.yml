@@ -48,8 +48,11 @@ jobs:
       - name: Testes de unidade e de invasão
         run: npm test
 
-      - name: Cria a tabela e as travas do banco
-        run: mysql -h 127.0.0.1 -uroot -praiz-so-para-o-ci hangdle < mysql/init.sql
+      - name: Cria as tabelas e as travas do banco
+        run: |
+          for arquivo in mysql/*.sql; do
+            mysql -h 127.0.0.1 -uroot -praiz-so-para-o-ci hangdle < "$arquivo"
+          done
 
       - name: Testes de integração com o MySQL
         run: npm run test:integracao

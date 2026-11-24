@@ -3,12 +3,7 @@ import { cpfValido } from "../dominio/Cpf.js";
 import { emailValido, normalizarEmail } from "../dominio/Email.js";
 import { nomeValido, normalizarNome, TAMANHO_MAXIMO_NOME, TAMANHO_MINIMO_NOME } from "../dominio/Nome.js";
 import { mensagemSenhaFraca, senhaForte } from "../dominio/Senha.js";
-
-function texto(obrigatorio: string) {
-  return z.string({
-    error: (problema) => (problema.input === undefined || problema.input === null ? obrigatorio : "Envie este campo como texto."),
-  });
-}
+import { identificador, texto } from "./comuns.js";
 
 // Rubrica de Exigência - zod
 export const esquemaCadastro = z.object({
@@ -33,5 +28,15 @@ export const esquemaLogin = z.object({
   senha: texto("Informe a senha.").min(1, "Informe a senha.").max(200, "E-mail ou senha incorretos."),
 });
 
+// Rubrica de Back-end - Edição de Usuário - Garantir que todos os campos são obrigatórios
+export const esquemaEdicao = esquemaCadastro.pick({ nome: true, cpf: true, senha: true }).extend({
+  email: z.undefined({ error: "O e-mail não pode ser alterado." }).optional(),
+});
+
+export const esquemaIdUsuario = z.object({
+  id: identificador("Usuário inválido."),
+});
+
 export type DadosCadastro = z.infer<typeof esquemaCadastro>;
 export type DadosLogin = z.infer<typeof esquemaLogin>;
+export type DadosEdicao = z.infer<typeof esquemaEdicao>;

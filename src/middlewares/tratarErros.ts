@@ -23,6 +23,7 @@ export const rotaNaoEncontrada: RequestHandler = (_requisicao, resposta) => {
   resposta.status(404).json({ mensagem: "Rota não encontrada." });
 };
 
+// Rubrica de Tech Forge - Tratamento de Exceções e Organização do Código - Um lugar só transforma cada erro na resposta certa, em português
 export const tratarErros: ErrorRequestHandler = (erro: unknown, _requisicao, resposta, _seguir) => {
   if (erro instanceof ZodError) {
     const campos = errosPorCampo(erro);

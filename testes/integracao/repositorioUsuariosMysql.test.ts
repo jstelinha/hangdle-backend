@@ -1,4 +1,4 @@
-import mysql, { type Connection } from "mysql2/promise";
+import type { Connection } from "mysql2/promise";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Cpf } from "../../src/dominio/Cpf.js";
 import { Email } from "../../src/dominio/Email.js";
@@ -7,6 +7,7 @@ import { Senha } from "../../src/dominio/Senha.js";
 import { Usuario } from "../../src/dominio/Usuario.js";
 import { ErroConflito } from "../../src/erros/ErroAplicacao.js";
 import { RepositorioUsuariosMysql } from "../../src/repositorios/RepositorioUsuariosMysql.js";
+import { conectarBancoDeTeste } from "../apoio/conexaoTeste.js";
 
 const HASH_VALIDO = "$2b$12$abcdefghijklmnopqrstuuMRjZ7c0Y3x5r4H9Fh7wJxX2nXxXxXxX";
 
@@ -27,13 +28,7 @@ async function inserirDireto(valores: { nome?: string; email?: string; cpf?: str
 }
 
 beforeAll(async () => {
-  conexao = await mysql.createConnection({
-    host: process.env.TESTE_DB_HOST ?? "127.0.0.1",
-    port: Number(process.env.DB_PORT ?? 3306),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-  });
+  conexao = await conectarBancoDeTeste();
   senha = await Senha.criar("Hangdle#2026");
 });
 
@@ -79,6 +74,31 @@ describe("repositório de usuários no MySQL", () => {
     const repetido = repositorio.inserir(await usuario("outra.teste@exemplo.com", "52998224725"));
 
     await expect(repetido).rejects.toMatchObject({ campos: { cpf: "Este CPF já está cadastrado." } });
+  });
+
+  it("busca pelo id e atualiza nome, CPF e senha sem mexer no e-mail", async () => {
+    const repositorio = new RepositorioUsuariosMysql(conexao);
+    const salvo = await repositorio.inserir(await usuario("larissa.teste@exemplo.com", "529.982.247-25"));
+    const { id } = salvo.paraResposta();
+    const editado = salvo.editado({ nome: new Nome("Larissa Andrade"), cpf: new Cpf("111.444.777-35"), senha: await Senha.criar("Forca#2027") });
+
+    await repositorio.atualizar(id, editado);
+    const encontrado = await repositorio.buscarPorId(id);
+
+    expect(encontrado?.paraPerfil()).toEqual({ id, nome: "Larissa Andrade", email: "larissa.teste@exemplo.com", cpf: "11144477735" });
+    expect(await encontrado?.conferirSenha("Forca#2027")).toBe(true);
+    expect(await repositorio.buscarPorId(id + 1000)).toBeNull();
+  });
+
+  it("traduz o CPF repetido na edição", async () => {
+    const repositorio = new RepositorioUsuariosMysql(conexao);
+    const larissa = await repositorio.inserir(await usuario("larissa.teste@exemplo.com", "529.982.247-25"));
+    await repositorio.inserir(await usuario("outra.teste@exemplo.com", "111.444.777-35"));
+    const comCpfDaOutra = larissa.editado({ nome: new Nome("Larissa Souza"), cpf: new Cpf("111.444.777-35"), senha });
+
+    await expect(repositorio.atualizar(larissa.paraResposta().id, comCpfDaOutra)).rejects.toMatchObject({
+      campos: { cpf: "Este CPF já está cadastrado." },
+    });
   });
 });
 

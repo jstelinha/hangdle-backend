@@ -1,0 +1,16 @@
+# Só para desenvolver nesta máquina: abre a API e o MySQL em 127.0.0.1, para o
+# DBeaver, o npm run test:integracao e o npm run dev do front. Use junto com o
+# principal:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Não tem o nome docker-compose.override.yml de propósito: esse o compose lê
+# sozinho, e as portas abririam em todo docker compose up.
+services:
+  db:
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  backend:
+    ports:
+      - "127.0.0.1:3000:3000"

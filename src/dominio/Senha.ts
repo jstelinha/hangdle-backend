@@ -1,5 +1,5 @@
-import bcrypt from "bcryptjs";
 import { ErroValidacao } from "../erros/ErroAplicacao.js";
+import { LIMITE_BYTES_BCRYPT, SenhaCriptografada } from "./SenhaCriptografada.js";
 
 export type CodigoRequisitoSenha = "tamanho" | "maiuscula" | "minuscula" | "numero" | "simbolo";
 
@@ -11,7 +11,6 @@ export type RequisitoSenha = {
 
 export const TAMANHO_MINIMO_SENHA = 8;
 export const TAMANHO_MAXIMO_SENHA = 64;
-const LIMITE_BYTES_BCRYPT = 72;
 const CUSTO_HASH = 12;
 
 const REQUISITOS: { codigo: CodigoRequisitoSenha; descricao: string; teste: (senha: string) => boolean }[] = [
@@ -43,12 +42,10 @@ export function mensagemSenhaFraca(senha: string): string {
   return `A senha precisa ter: ${faltando.join(", ")}.`;
 }
 
-export class Senha {
-  readonly #hash: string;
-
+export class Senha extends SenhaCriptografada {
   // Rubrica de Tech Forge - Encapsulamento e Proteção do Estado - Construtores limpos com a devida inicialização das propriedades
   private constructor(hash: string) {
-    this.#hash = hash;
+    super(hash);
   }
 
   // Rubrica de Back-end - Autenticação - Senha criptografada no banco
@@ -56,18 +53,10 @@ export class Senha {
     if (!senhaForte(textoPuro)) {
       throw new ErroValidacao("Senha fraca.", { senha: mensagemSenhaFraca(textoPuro) });
     }
-    return new Senha(await bcrypt.hash(textoPuro, CUSTO_HASH));
+    return new Senha(await Senha.gerarHash(textoPuro, CUSTO_HASH));
   }
 
   static aPartirDoHash(hash: string): Senha {
     return new Senha(hash);
-  }
-
-  confere(textoPuro: string): Promise<boolean> {
-    return bcrypt.compare(textoPuro, this.#hash);
-  }
-
-  get hash(): string {
-    return this.#hash;
   }
 }

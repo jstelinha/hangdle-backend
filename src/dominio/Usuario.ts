@@ -9,6 +9,10 @@ export type UsuarioPublico = {
   email: string;
 };
 
+export type PerfilUsuario = UsuarioPublico & {
+  cpf: string;
+};
+
 export type RegistroUsuario = {
   nome: string;
   email: string;
@@ -23,6 +27,8 @@ type DadosUsuario = {
   cpf: Cpf;
   senha: Senha;
 };
+
+type DadosEditaveis = Omit<DadosUsuario, "id" | "email">;
 
 export class Usuario {
   readonly #id: number | null;
@@ -41,6 +47,11 @@ export class Usuario {
 
   comId(id: number): Usuario {
     return new Usuario({ id, nome: this.#nome, email: this.#email, cpf: this.#cpf, senha: this.#senha });
+  }
+
+  // Rubrica de Back-end - Edição de Usuário - Não permitir que o usuário altere o email
+  editado({ nome, cpf, senha }: DadosEditaveis): Usuario {
+    return new Usuario({ id: this.#id ?? undefined, nome, email: this.#email, cpf, senha });
   }
 
   conferirSenha(textoPuro: string): Promise<boolean> {
@@ -62,5 +73,9 @@ export class Usuario {
       throw new Error("Usuário ainda não foi salvo no banco.");
     }
     return { id: this.#id, nome: this.#nome.texto, email: this.#email.endereco };
+  }
+
+  paraPerfil(): PerfilUsuario {
+    return { ...this.paraResposta(), cpf: this.#cpf.digitos };
   }
 }

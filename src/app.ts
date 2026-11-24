@@ -1,33 +1,102 @@
 import cors from "cors";
 import express, { type Express } from "express";
-import { limitarTentativas } from "./middlewares/limitarTentativas.js";
+import { exigirLogin } from "./middlewares/exigirLogin.js";
+import { limitarTentativas, UM_MINUTO } from "./middlewares/limitarTentativas.js";
 import { rotaNaoEncontrada, tratarErros } from "./middlewares/tratarErros.js";
+import type { RepositorioListas } from "./repositorios/RepositorioListas.js";
+import type { RepositorioListasProntas } from "./repositorios/RepositorioListasProntas.js";
+import type { RepositorioPalavrasDasListas } from "./repositorios/RepositorioPalavrasDasListas.js";
+import type { RepositorioPalavrasDoDia } from "./repositorios/RepositorioPalavrasDoDia.js";
+import type { RepositorioParticipantes } from "./repositorios/RepositorioParticipantes.js";
+import type { RepositorioResultados } from "./repositorios/RepositorioResultados.js";
+import type { RepositorioSalas } from "./repositorios/RepositorioSalas.js";
 import type { RepositorioUsuarios } from "./repositorios/RepositorioUsuarios.js";
+import type { RepositorioVezes } from "./repositorios/RepositorioVezes.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
+import { rotasEstatisticas } from "./rotas/estatisticas.js";
+import { rotasListas } from "./rotas/listas.js";
+import { rotasListasProntas } from "./rotas/listasProntas.js";
+import { rotasPalavrasDasListas } from "./rotas/palavrasDasListas.js";
+import { rotasPalavraDoDia } from "./rotas/palavraDoDia.js";
+import { rotasPartidaNaSala } from "./rotas/partidaNaSala.js";
+import { rotasParticipantes } from "./rotas/participantes.js";
+import { rotasPerfil } from "./rotas/perfil.js";
+import { rotasResultados } from "./rotas/resultados.js";
+import { rotasSalas } from "./rotas/salas.js";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasUsuarios } from "./rotas/usuarios.js";
+import { AndamentoDaPartida } from "./servicos/AndamentoDaPartida.js";
 import { ServicoAutenticacao, type ConfiguracaoToken } from "./servicos/ServicoAutenticacao.js";
 import { ServicoCadastro } from "./servicos/ServicoCadastro.js";
+import { ServicoListas } from "./servicos/ServicoListas.js";
+import { ServicoListasProntas } from "./servicos/ServicoListasProntas.js";
+import { ServicoPalavrasDasListas } from "./servicos/ServicoPalavrasDasListas.js";
+import { ServicoPalavraDoDia } from "./servicos/ServicoPalavraDoDia.js";
+import { ServicoParticipantes } from "./servicos/ServicoParticipantes.js";
+import { ServicoPartidaNaSala } from "./servicos/ServicoPartidaNaSala.js";
+import { ServicoPerfil } from "./servicos/ServicoPerfil.js";
+import { ServicoResultados } from "./servicos/ServicoResultados.js";
+import { ServicoSalas } from "./servicos/ServicoSalas.js";
+import { TokenDoJogo } from "./servicos/TokenDoJogo.js";
 
+// Rubrica de Tech Forge - Aderência aos Princípios SOLID - Inversão de dependência: os serviços recebem os repositórios pela interface; o server.ts passa os do MySQL, e os testes, os em memória
 export type DependenciasApp = {
   usuarios: RepositorioUsuarios;
+  palavrasDoDia: RepositorioPalavrasDoDia;
+  resultados: RepositorioResultados;
+  listas: RepositorioListas;
+  listasProntas: RepositorioListasProntas;
+  palavrasDasListas: RepositorioPalavrasDasListas;
+  salas: RepositorioSalas;
+  participantes: RepositorioParticipantes;
+  vezes: RepositorioVezes;
+  agora: () => Date;
   verificarBanco: () => Promise<void>;
   token: ConfiguracaoToken;
   corsOrigens: string[];
   tentativasPorJanela: number;
+  // Pedidos por minuto, por IP, nas rotas abertas da palavra do dia. Uma partida tem no máximo 26 letras.
+  jogadasPorMinuto?: number;
 };
+
+const JOGADAS_POR_MINUTO = 120;
 
 export function criarApp(dependencias: DependenciasApp): Express {
   const app = express();
-  const limite = limitarTentativas(dependencias.tentativasPorJanela);
+  const limiteCadastro = limitarTentativas(dependencias.tentativasPorJanela);
+  const limiteLogin = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
+  const limiteEntradaNaSala = limitarTentativas(dependencias.tentativasPorJanela, { contarSoFalhas: true });
+  // As rotas da palavra do dia não pedem login: sem limite, dava para mandar letras sem parar.
+  const limiteJogoDoDia = limitarTentativas(dependencias.jogadasPorMinuto ?? JOGADAS_POR_MINUTO, { janelaMs: UM_MINUTO });
+  const login = exigirLogin(dependencias.token.segredo);
+  const { usuarios, palavrasDoDia, resultados, listas, listasProntas, palavrasDasListas, salas, participantes, vezes, agora } = dependencias;
+  const servicoResultados = new ServicoResultados(resultados, palavrasDoDia, agora);
+  const servicoListas = new ServicoListas(listas);
+  // A partida anda num lugar só, que fala direto com os repositórios: salas, participantes e partida usam o mesmo
+  // andamento, e nenhum desses serviços depende do outro para isso.
+  const andamento = new AndamentoDaPartida(salas, participantes, vezes, agora);
+  const servicoSalas = new ServicoSalas(salas, participantes, servicoListas, usuarios, andamento);
 
   app.disable("x-powered-by");
+  // O nginx é o único proxy na frente da API: o IP real é o último do X-Forwarded-For, que ele mesmo põe.
+  app.set("trust proxy", 1);
   app.use(cors({ origin: dependencias.corsOrigens }));
   app.use(express.json({ limit: "10kb" }));
 
   app.use(rotasSaude(dependencias.verificarBanco));
-  app.use(rotasUsuarios(new ServicoCadastro(dependencias.usuarios), limite));
-  app.use(rotasAutenticacao(new ServicoAutenticacao(dependencias.usuarios, dependencias.token), limite));
+  app.use(rotasUsuarios(new ServicoCadastro(usuarios), limiteCadastro));
+  app.use(rotasPerfil(new ServicoPerfil(usuarios), login));
+  app.use(rotasAutenticacao(new ServicoAutenticacao(usuarios, dependencias.token), limiteLogin));
+  app.use("/palavra-do-dia", limiteJogoDoDia);
+  app.use(rotasEstatisticas(servicoResultados));
+  app.use(rotasPalavraDoDia(new ServicoPalavraDoDia(palavrasDoDia, agora, new TokenDoJogo(dependencias.token.segredo))));
+  app.use(rotasResultados(servicoResultados, login));
+  app.use(rotasListas(servicoListas, login));
+  app.use(rotasListasProntas(new ServicoListasProntas(listasProntas, listas, palavrasDasListas), login));
+  app.use(rotasPalavrasDasListas(new ServicoPalavrasDasListas(palavrasDasListas, servicoListas), login));
+  app.use(rotasSalas(servicoSalas, login));
+  app.use(rotasParticipantes(new ServicoParticipantes(participantes, servicoSalas, andamento), login, limiteEntradaNaSala));
+  app.use(rotasPartidaNaSala(new ServicoPartidaNaSala(andamento, vezes, agora), login));
 
   app.use(rotaNaoEncontrada);
   app.use(tratarErros);

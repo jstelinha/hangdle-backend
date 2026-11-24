@@ -85,7 +85,7 @@ describe("ataques contra cadastro e login", () => {
   });
 
   it("bloqueia a quarta tentativa de login seguida quando o limite é 3", async () => {
-    const { app } = criarAppTeste(3);
+    const { app } = criarAppTeste({ tentativasPorJanela: 3 });
     const tentativa = () => request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
 
     await tentativa();
@@ -95,6 +95,77 @@ describe("ataques contra cadastro e login", () => {
 
     expect(quarta.status).toBe(429);
     expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere 15 minutos e tente de novo." });
+  });
+
+  it("login certo não gasta tentativa", async () => {
+    const { app } = criarAppTeste({ tentativasPorJanela: 2 });
+    await request(app).post("/usuarios").send(LARISSA);
+    const entrar = () => request(app).post("/login").send({ email: LARISSA.email, senha: LARISSA.senha });
+
+    const respostas = [await entrar(), await entrar(), await entrar()];
+
+    expect(respostas.map((resposta) => resposta.status)).toEqual([200, 200, 200]);
+  });
+
+  it("cadastro não gasta as tentativas do login", async () => {
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
+    await request(app).post("/usuarios").send(LARISSA);
+
+    const login = await request(app).post("/login").send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    expect(login.status).toBe(401);
+  });
+
+  it("atrás do nginx, cada pessoa tem o próprio limite de tentativas", async () => {
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
+    const tentativaDe = (ip: string) =>
+      request(app).post("/login").set("X-Forwarded-For", ip).send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaDe("203.0.113.10");
+    const segundaDaMesmaPessoa = await tentativaDe("203.0.113.10");
+    const primeiraDeOutraPessoa = await tentativaDe("203.0.113.20");
+
+    expect(segundaDaMesmaPessoa.status).toBe(429);
+    expect(primeiraDeOutraPessoa.status).toBe(401);
+  });
+
+  it("não deixa escapar do limite inventando um IP no X-Forwarded-For", async () => {
+    const { app } = criarAppTeste({ tentativasPorJanela: 1 });
+    const tentativaComIpInventado = (inventado: string) =>
+      request(app)
+        .post("/login")
+        .set("X-Forwarded-For", `${inventado}, 203.0.113.10`)
+        .send({ email: LARISSA.email, senha: "Errada#2026" });
+
+    await tentativaComIpInventado("198.51.100.1");
+    const segunda = await tentativaComIpInventado("198.51.100.2");
+
+    expect(segunda.status).toBe(429);
+  });
+
+  it("limita as letras da palavra do dia, que não pedem login", async () => {
+    const { app } = criarAppTeste({ jogadasPorMinuto: 3 });
+    const { body: comeco } = await request(app).get("/palavra-do-dia");
+    const chutar = (letra: string) => request(app).post("/palavra-do-dia/letras").send({ letra, token: comeco.token });
+
+    const respostas = [await chutar("A"), await chutar("E")];
+    const quarta = await chutar("I");
+
+    expect(respostas.map((resposta) => resposta.status)).toEqual([200, 200]);
+    expect(quarta.status).toBe(429);
+    expect(quarta.body).toEqual({ mensagem: "Muitas tentativas seguidas. Espere um minuto e tente de novo." });
+  });
+
+  it("as estatísticas do dia contam no mesmo limite da palavra do dia, e o resto da API não", async () => {
+    const { app } = criarAppTeste({ jogadasPorMinuto: 1 });
+
+    const primeira = await request(app).get("/palavra-do-dia");
+    const estatisticas = await request(app).get("/palavra-do-dia/estatisticas");
+    const saude = await request(app).get("/saude");
+
+    expect(primeira.status).toBe(200);
+    expect(estatisticas.status).toBe(429);
+    expect(saude.status).toBe(200);
   });
 
   it("só libera CORS para as origens configuradas", async () => {

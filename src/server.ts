@@ -1,13 +1,30 @@
 import { criarApp } from "./app.js";
 import { criarConexao } from "./banco/conexao.js";
 import { lerAmbiente } from "./config/ambiente.js";
+import { RepositorioListasMysql } from "./repositorios/RepositorioListasMysql.js";
+import { RepositorioListasProntasMysql } from "./repositorios/RepositorioListasProntasMysql.js";
+import { RepositorioPalavrasDasListasMysql } from "./repositorios/RepositorioPalavrasDasListasMysql.js";
+import { RepositorioPalavrasDoDiaMysql } from "./repositorios/RepositorioPalavrasDoDiaMysql.js";
+import { RepositorioParticipantesMysql } from "./repositorios/RepositorioParticipantesMysql.js";
+import { RepositorioSalasMysql } from "./repositorios/RepositorioSalasMysql.js";
+import { RepositorioResultadosMysql } from "./repositorios/RepositorioResultadosMysql.js";
 import { RepositorioUsuariosMysql } from "./repositorios/RepositorioUsuariosMysql.js";
+import { RepositorioVezesMysql } from "./repositorios/RepositorioVezesMysql.js";
 
 const ambiente = lerAmbiente();
 const banco = criarConexao(ambiente);
 
 const app = criarApp({
   usuarios: new RepositorioUsuariosMysql(banco),
+  palavrasDoDia: new RepositorioPalavrasDoDiaMysql(banco),
+  resultados: new RepositorioResultadosMysql(banco),
+  listas: new RepositorioListasMysql(banco),
+  listasProntas: new RepositorioListasProntasMysql(banco),
+  palavrasDasListas: new RepositorioPalavrasDasListasMysql(banco),
+  salas: new RepositorioSalasMysql(banco),
+  participantes: new RepositorioParticipantesMysql(banco),
+  vezes: new RepositorioVezesMysql(banco),
+  agora: () => new Date(),
   verificarBanco: async () => {
     await banco.query("SELECT 1");
   },
@@ -16,6 +33,18 @@ const app = criarApp({
   tentativasPorJanela: ambiente.TENTATIVAS_POR_JANELA,
 });
 
-app.listen(ambiente.PORT, "0.0.0.0", () => {
+const servidor = app.listen(ambiente.PORT, "0.0.0.0", () => {
   console.log(`API do Hangdle ouvindo na porta ${ambiente.PORT}`);
 });
+
+// O docker stop manda SIGTERM (e o Ctrl+C, SIGINT): a API para de aceitar conexões, termina as que estão em
+// andamento, fecha o pool do MySQL e sai com 0.
+function encerrar(sinal: NodeJS.Signals) {
+  console.log(`${sinal} recebido: encerrando a API.`);
+  servidor.close(() => {
+    banco.end().finally(() => process.exit(0));
+  });
+}
+
+process.once("SIGTERM", encerrar);
+process.once("SIGINT", encerrar);

@@ -1,6 +1,7 @@
 
-name: cade
+name: hangdle
 
+# Rubrica de Devops - Organização do docker-compose.yml - Um serviço por papel (banco, API, front e nginx), cada um com as suas redes; as senhas vêm do .env e os dados ficam no volume db_data
 services:
   db:
     image: mysql:8.4
@@ -11,11 +12,12 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "127.0.0.1:3306:3306"
+      # O root só entra de dentro do próprio container, e não de qualquer máquina da rede interna.
+      MYSQL_ROOT_HOST: localhost
+    # Rubrica de Devops - Persistência de dados no MySQL - O banco fica no volume db_data, fora do container: os dados continuam depois de parar, reiniciar ou recriar o container (só o down -v apaga)
     volumes:
       - db_data:/var/lib/mysql
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
       interval: 5s
@@ -28,8 +30,9 @@ services:
     build: .
     container_name: hangdle_backend
     restart: always
-    ports:
-      - "3000:3000"
+    # Um init na frente do node, que repassa o SIGTERM do docker stop para a API (ver o fim do Dockerfile).
+    init: true
+    # Rubrica de Devops - Integração entre serviços - A API acha o MySQL pelo nome do serviço (db), na rede interna, e só liga depois que ele responde ao healthcheck
     environment:
       PORT: 3000
       DB_HOST: db
@@ -44,12 +47,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # A API está pronta quando o /saude responde 200, e ele só responde 200 se o banco responder.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/saude').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
     networks:
       - rede-interna
       - rede-externa
 
   frontend:
-    build: ../cade-frontend
+    build: ../hangdle-frontend
     container_name: hangdle_frontend
     restart: always
     depends_on:
@@ -61,13 +72,18 @@ services:
     image: nginx:alpine
     container_name: hangdle_nginx
     restart: always
+    # Rubrica de Devops - Isolamento e restrição de acesso via Docker Network - Só o nginx tem porta fora do Docker
     ports:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    # Rubrica de Devops - Integração entre serviços - O nginx leva o / para o front e o /api/ para a API (nginx.conf): é assim que o front consome o back
+    # Só sobe com a API saudável: assim ninguém recebe 502 enquanto a API ainda liga.
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     networks:
       - rede-externa
 

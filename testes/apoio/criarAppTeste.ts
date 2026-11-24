@@ -1,5 +1,14 @@
 import { criarApp } from "../../src/app.js";
+import { RepositorioListasMemoria } from "./RepositorioListasMemoria.js";
+import { RepositorioListasProntasMemoria } from "./RepositorioListasProntasMemoria.js";
+import type { ListaProntaComPalavras } from "../../src/dominio/ListaPronta.js";
+import { RepositorioPalavrasDasListasMemoria } from "./RepositorioPalavrasDasListasMemoria.js";
+import { RepositorioParticipantesMemoria } from "./RepositorioParticipantesMemoria.js";
+import { RepositorioSalasMemoria } from "./RepositorioSalasMemoria.js";
+import { RepositorioPalavrasDoDiaMemoria, type PalavraCadastrada } from "./RepositorioPalavrasDoDiaMemoria.js";
+import { RepositorioResultadosMemoria } from "./RepositorioResultadosMemoria.js";
 import { RepositorioUsuariosMemoria } from "./RepositorioUsuariosMemoria.js";
+import { RepositorioVezesMemoria } from "./RepositorioVezesMemoria.js";
 
 export const SEGREDO_TESTE = "segredo-so-para-teste-com-mais-de-32-caracteres";
 
@@ -10,14 +19,54 @@ export const LARISSA = {
   senha: "Hangdle#2026",
 };
 
-export function criarAppTeste(tentativasPorJanela = 1000) {
+export const BRUNA = {
+  nome: "Bruna Lima",
+  email: "bruna@exemplo.com",
+  cpf: "111.444.777-35",
+  senha: "Hangdle#2026",
+};
+
+export const PALAVRAS_TESTE: PalavraCadastrada[] = [
+  { palavra: "MAÇÃ", categoria: "Comida" },
+  { palavra: "ARARA", categoria: "Animais" },
+];
+
+type OpcoesAppTeste = {
+  tentativasPorJanela?: number;
+  jogadasPorMinuto?: number;
+  agora?: () => Date;
+  palavras?: PalavraCadastrada[];
+  listasProntas?: ListaProntaComPalavras[];
+};
+
+export function criarAppTeste({
+  tentativasPorJanela = 1000,
+  jogadasPorMinuto = 1000,
+  agora = () => new Date("2026-11-03T12:00:00-03:00"),
+  palavras = PALAVRAS_TESTE,
+  listasProntas,
+}: OpcoesAppTeste = {}) {
   const usuarios = new RepositorioUsuariosMemoria();
+  const palavrasDasListas = new RepositorioPalavrasDasListasMemoria();
+  const salas: RepositorioSalasMemoria = new RepositorioSalasMemoria(() => participantes);
+  const participantes = new RepositorioParticipantesMemoria((salaId) => salas.dadosDaSala(salaId));
+  const vezes = new RepositorioVezesMemoria(salas, participantes, palavrasDasListas, palavras);
   const app = criarApp({
     usuarios,
+    palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
+    resultados: new RepositorioResultadosMemoria(),
+    listas: new RepositorioListasMemoria((listaId) => palavrasDasListas.contar(listaId)),
+    listasProntas: new RepositorioListasProntasMemoria(listasProntas),
+    palavrasDasListas,
+    salas,
+    participantes,
+    vezes,
+    agora,
     verificarBanco: async () => {},
     token: { segredo: SEGREDO_TESTE, expiracaoSegundos: 3600 },
     corsOrigens: ["http://localhost"],
     tentativasPorJanela,
+    jogadasPorMinuto,
   });
-  return { app, usuarios };
+  return { app, usuarios, salas };
 }

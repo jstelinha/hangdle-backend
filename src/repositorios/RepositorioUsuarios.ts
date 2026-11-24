@@ -5,6 +5,8 @@ import { ErroConflito } from "../erros/ErroAplicacao.js";
 export interface RepositorioUsuarios {
   inserir(usuario: Usuario): Promise<Usuario>;
   buscarPorEmail(email: Email): Promise<Usuario | null>;
+  buscarPorId(id: number): Promise<Usuario | null>;
+  atualizar(id: number, usuario: Usuario): Promise<void>;
 }
 
 export type CampoUnico = "email" | "cpf";
