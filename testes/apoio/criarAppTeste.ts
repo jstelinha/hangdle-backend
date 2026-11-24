@@ -1,5 +1,7 @@
 import { criarApp } from "../../src/app.js";
 import { RepositorioListasMemoria } from "./RepositorioListasMemoria.js";
+import { RepositorioListasProntasMemoria } from "./RepositorioListasProntasMemoria.js";
+import type { ListaProntaComPalavras } from "../../src/dominio/ListaPronta.js";
 import { RepositorioPalavrasDasListasMemoria } from "./RepositorioPalavrasDasListasMemoria.js";
 import { RepositorioParticipantesMemoria } from "./RepositorioParticipantesMemoria.js";
 import { RepositorioSalasMemoria } from "./RepositorioSalasMemoria.js";
@@ -34,6 +36,7 @@ type OpcoesAppTeste = {
   jogadasPorMinuto?: number;
   agora?: () => Date;
   palavras?: PalavraCadastrada[];
+  listasProntas?: ListaProntaComPalavras[];
 };
 
 export function criarAppTeste({
@@ -41,6 +44,7 @@ export function criarAppTeste({
   jogadasPorMinuto = 1000,
   agora = () => new Date("2026-11-03T12:00:00-03:00"),
   palavras = PALAVRAS_TESTE,
+  listasProntas,
 }: OpcoesAppTeste = {}) {
   const usuarios = new RepositorioUsuariosMemoria();
   const palavrasDasListas = new RepositorioPalavrasDasListasMemoria();
@@ -52,6 +56,7 @@ export function criarAppTeste({
     palavrasDoDia: new RepositorioPalavrasDoDiaMemoria(palavras),
     resultados: new RepositorioResultadosMemoria(),
     listas: new RepositorioListasMemoria((listaId) => palavrasDasListas.contar(listaId)),
+    listasProntas: new RepositorioListasProntasMemoria(listasProntas),
     palavrasDasListas,
     salas,
     participantes,

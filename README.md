@@ -179,6 +179,8 @@ Para recriar o banco do zero com todos os arquivos, rode `docker compose down -v
 | `POST` | `/listas` | Com login. Cria uma lista: `nome`, de 2 a 40 caracteres, sem repetir entre as listas da pessoa. Devolve `201`. |
 | `PUT` | `/listas/:id` | Com login, só o dono. Troca o `nome`. |
 | `DELETE` | `/listas/:id` | Com login, só o dono. Apaga a lista e as palavras dela. Devolve `204`. |
+| `GET` | `/listas-prontas` | Com login. As listas prontas, iguais para todo mundo, em ordem de nome, com quantas palavras cada uma tem: `{ listas }`. |
+| `POST` | `/listas-prontas/:id/copias` | Com login. Copia a lista pronta, com as palavras e as dicas, para as listas de quem está logado. Devolve `201` com a lista nova; `409` se a pessoa já tem uma lista com esse nome. |
 | `GET` | `/listas/:listaId/palavras` | Com login, só o dono da lista. As palavras da lista, em ordem alfabética e em páginas. |
 | `GET` | `/listas/:listaId/palavras/:id` | Com login, só o dono da lista. Uma palavra. |
 | `POST` | `/listas/:listaId/palavras` | Com login, só o dono da lista. `palavra` (de 3 a 30 letras, com espaço ou hífen só entre as partes) e `dica` (opcional, de 2 a 80 caracteres). A palavra é guardada em maiúsculas e não se repete na lista. Devolve `201`. |

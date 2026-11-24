@@ -2,6 +2,7 @@ import { criarApp } from "./app.js";
 import { criarConexao } from "./banco/conexao.js";
 import { lerAmbiente } from "./config/ambiente.js";
 import { RepositorioListasMysql } from "./repositorios/RepositorioListasMysql.js";
+import { RepositorioListasProntasMysql } from "./repositorios/RepositorioListasProntasMysql.js";
 import { RepositorioPalavrasDasListasMysql } from "./repositorios/RepositorioPalavrasDasListasMysql.js";
 import { RepositorioPalavrasDoDiaMysql } from "./repositorios/RepositorioPalavrasDoDiaMysql.js";
 import { RepositorioParticipantesMysql } from "./repositorios/RepositorioParticipantesMysql.js";
@@ -18,6 +19,7 @@ const app = criarApp({
   palavrasDoDia: new RepositorioPalavrasDoDiaMysql(banco),
   resultados: new RepositorioResultadosMysql(banco),
   listas: new RepositorioListasMysql(banco),
+  listasProntas: new RepositorioListasProntasMysql(banco),
   palavrasDasListas: new RepositorioPalavrasDasListasMysql(banco),
   salas: new RepositorioSalasMysql(banco),
   participantes: new RepositorioParticipantesMysql(banco),
