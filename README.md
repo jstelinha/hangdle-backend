@@ -147,6 +147,7 @@ O SQL fica em arquivos numerados na pasta `mysql/`, um por assunto:
 | `07-salas.sql` | As salas (pública ou com senha, tempo de 45, 90 ou 120 s, de 1 a 5 rodadas, de 2 a 10 jogadores) e quem está em cada uma. A mesma pessoa e o mesmo apelido não se repetem na sala, e um gatilho recusa quem chega com a sala cheia. Apagar a lista deixa a sala sem lista. |
 | `08-vezes.sql` | As vezes de cada partida na sala (quem escolhe, a palavra, a dica e as horas de começo, escolha e fim) e as letras que cada jogador chutou em cada vez. O número da vez não se repete na sala, nem a letra para o mesmo jogador na mesma vez. Se quem escolhe sai da sala, a vez dele some. |
 | `09-permissoes.sh` | Deixa o usuário da API (`DB_USER`) só com `SELECT`, `INSERT`, `UPDATE` e `DELETE`: ele não apaga tabelas nem as travas. É `.sh` porque o nome do usuário vem do `.env`. O root só entra de dentro do container (`MYSQL_ROOT_HOST: localhost`, no `docker-compose.yml`). |
+| `10-listas-prontas.sql` | As 8 listas prontas (Animais, Frutas, Países, Profissões, Esportes, Objetos da casa, Comidas e Cores), com 20 palavras e dicas cada, nas mesmas regras das palavras das listas. São só para ler: quem quer usar copia para as próprias listas. |
 
 Na primeira subida, o MySQL roda todos, em ordem. Depois disso ele não roda mais nenhum, então
 um arquivo novo precisa ser aplicado à mão num banco que já existe. Por exemplo,
