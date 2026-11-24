@@ -30,6 +30,8 @@ services:
     build: .
     container_name: hangdle_backend
     restart: always
+    # Um init na frente do node, que repassa o SIGTERM do docker stop para a API (ver o fim do Dockerfile).
+    init: true
     # Rubrica de Devops - Integração entre serviços - A API acha o MySQL pelo nome do serviço (db), na rede interna, e só liga depois que ele responde ao healthcheck
     environment:
       PORT: 3000
@@ -45,6 +47,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # A API está pronta quando o /saude responde 200, e ele só responde 200 se o banco responder.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/saude').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
     networks:
       - rede-interna
       - rede-externa
@@ -68,9 +78,12 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     # Rubrica de Devops - Integração entre serviços - O nginx leva o / para o front e o /api/ para a API (nginx.conf): é assim que o front consome o back
+    # Só sobe com a API saudável: assim ninguém recebe 502 enquanto a API ainda liga.
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     networks:
       - rede-externa
 

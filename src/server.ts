@@ -31,6 +31,18 @@ const app = criarApp({
   tentativasPorJanela: ambiente.TENTATIVAS_POR_JANELA,
 });
 
-app.listen(ambiente.PORT, "0.0.0.0", () => {
+const servidor = app.listen(ambiente.PORT, "0.0.0.0", () => {
   console.log(`API do Hangdle ouvindo na porta ${ambiente.PORT}`);
 });
+
+// O docker stop manda SIGTERM (e o Ctrl+C, SIGINT): a API para de aceitar conexões, termina as que estão em
+// andamento, fecha o pool do MySQL e sai com 0.
+function encerrar(sinal: NodeJS.Signals) {
+  console.log(`${sinal} recebido: encerrando a API.`);
+  servidor.close(() => {
+    banco.end().finally(() => process.exit(0));
+  });
+}
+
+process.once("SIGTERM", encerrar);
+process.once("SIGINT", encerrar);

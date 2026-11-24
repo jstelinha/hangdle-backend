@@ -58,7 +58,7 @@ nginx. Cada linha tem a marcação `# Rubrica de Devops` no arquivo citado.
 | Item da rubrica | Onde está | Como conferir |
 |---|---|---|
 | **Organização do docker-compose.yml** · indentação, serviços separados, volumes, redes e variáveis de ambiente | `docker-compose.yml`: um serviço por papel (`db`, `backend`, `frontend` e `nginx`), com 2 espaços de indentação; as redes `rede-interna` e `rede-externa`; o volume `db_data`; as senhas e o segredo do JWT vêm do `.env` (os nomes estão no `.env.example`), com valor padrão para o que não é segredo; as portas para desenvolver ficam à parte, em `docker-compose.dev.yml` | `docker compose up -d --build` sobe os quatro containers |
-| **Integração entre serviços** · a API conecta ao MySQL, o front consome a API, o nginx faz o proxy | `docker-compose.yml`: a API acha o banco pelo nome do serviço (`DB_HOST: db`) e só liga depois do healthcheck dele (`depends_on` com `service_healthy`); o nginx depende do front e da API. O front chama a API pelo caminho `/api` (`src/api/axios.ts`, no `hangdle-frontend`), e o nginx leva esse caminho para a API | `http://localhost/api/saude` responde `{"api":"ok","banco":"ok"}`: a rota `src/rotas/saude.ts` consulta o banco |
+| **Integração entre serviços** · a API conecta ao MySQL, o front consome a API, o nginx faz o proxy | `docker-compose.yml`: a API acha o banco pelo nome do serviço (`DB_HOST: db`) e só liga depois do healthcheck dele (`depends_on` com `service_healthy`); a API tem um healthcheck (o `/saude` responde 200 só com o banco no ar), e o nginx só sobe com a API saudável, sem `502` enquanto ela liga. O front chama a API pelo caminho `/api` (`src/api/axios.ts`, no `hangdle-frontend`), e o nginx leva esse caminho para a API | `http://localhost/api/saude` responde `{"api":"ok","banco":"ok"}`: a rota `src/rotas/saude.ts` consulta o banco |
 | **Persistência de dados no MySQL** · volume para os dados continuarem depois de reiniciar | `docker-compose.yml`: o volume `db_data` guarda o `/var/lib/mysql` fora do container; os arquivos de `mysql/` criam as tabelas só na primeira subida | Os dados continuam depois de `docker compose restart db` ou de `docker compose down` e `up` (só o `down -v` apaga) |
 | **Configuração do Nginx como proxy reverso** · leva cada pedido para o front ou para a API | `nginx.conf`: o `/` vai para o nginx do front (`frontend:80`, que devolve o `index.html` para as rotas do React), e o `/api/` vai para a API (`backend:3000`), sem o `/api`. O nginx manda o IP de quem pediu no `X-Forwarded-For`, que a API usa para o limite de tentativas (`trust proxy` em `src/app.ts`) | `http://localhost/salas` abre a tela mesmo ao recarregar; `http://localhost/api/saude` responde pela API |
 | **Isolamento e restrição de acesso via Docker Network** · só o nginx exposto fora do Docker | `docker-compose.yml`: só o `nginx` tem `ports` (a 80). O banco fica só na `rede-interna`, o front só na `rede-externa` e a API nas duas: o front não alcança o banco. As portas da API e do MySQL só abrem com o `docker-compose.dev.yml`, e só em `127.0.0.1` | Com o compose normal, `127.0.0.1:3000` e `127.0.0.1:3306` não respondem |
@@ -79,7 +79,10 @@ nginx. Cada linha tem a marcação `# Rubrica de Devops` no arquivo citado.
   `src/servicos/ServicoAutenticacao.ts`, `Buffer` em `src/dominio/Senha.ts` e
   `process.env` em `src/config/ambiente.ts`.
 - **Para rodar:** `npm start` executa `node dist/server.js`. O `Dockerfile` parte
-  da imagem `node:24-alpine`.
+  da imagem `node:24-alpine`, em duas etapas: a primeira compila com o
+  TypeScript; a segunda leva só as dependências de produção e o `dist/`, e roda o
+  `node` direto. Com o `init: true` do compose, o `docker stop` chega na API, que
+  fecha o servidor e o pool do MySQL antes de sair.
 
 ## Rodar tudo com Docker
 
@@ -102,7 +105,7 @@ O comando sobe um projeto chamado `hangdle` com quatro containers:
 | Container | O que roda |
 |---|---|
 | `hangdle_mysql` | MySQL 8.4. Na primeira subida, cria as tabelas sozinho com os arquivos da pasta `mysql/`. |
-| `hangdle_backend` | Esta API, na porta 3000 dentro do Docker. Não tem porta fora dele: a API só é acessível pelo nginx, em `/api/`. Só liga depois que o MySQL responde. |
+| `hangdle_backend` | Esta API, na porta 3000 dentro do Docker. Não tem porta fora dele: a API só é acessível pelo nginx, em `/api/`. Só liga depois que o MySQL responde, e fica `healthy` quando o `/saude` responde 200. |
 | `hangdle_frontend` | O front já compilado (`npm run build`), que vem de `../hangdle-frontend` e é servido por um nginx próprio, na porta 80 dentro do Docker. Depois de mudar o front, rode o `up -d --build` de novo. |
 | `hangdle_nginx` | A porta de entrada, na porta 80: `/` vai para o front e `/api/` vai para a API. Manda os cabeçalhos de segurança (Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` e `Permissions-Policy`) e não mostra a versão do nginx. |
 
